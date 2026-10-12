@@ -1,7 +1,9 @@
-import ollama
+from groq import Groq
 import json
 import re
-
+from dotenv import load_dotenv
+load_dotenv()
+client = Groq()
 def verify_pr_against_blueprint(raw_diff: str, jira_blueprint_text: str) -> dict:
     """
     Dynamically compares a PR diff against the JIRA blueprint using Llama 3.
@@ -31,8 +33,8 @@ def verify_pr_against_blueprint(raw_diff: str, jira_blueprint_text: str) -> dict
     """
     
     print(" [VERIFIER] Analyzing PR Diff against Jira Blueprint...")
-    response = ollama.generate(model='llama3:8b', prompt=prompt)
-    raw_text = response['response'].strip()
+    response =  client.chat.completions.create(model='openai/gpt-oss-120b', messages=[{"role": "user", "content": prompt}] , temperature=0.2)
+    raw_text = (response.choices[0].message.content or "").strip()
     
     try:
         

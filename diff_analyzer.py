@@ -1,6 +1,9 @@
-import ollama
+from groq import Groq
+from dotenv import load_dotenv
 import json
 import re
+load_dotenv()
+client = Groq()
 
 def analyze_code_diff(git_diff_text: str) -> str:
     """
@@ -19,8 +22,8 @@ def analyze_code_diff(git_diff_text: str) -> str:
     """
     
     print(" AI is analyzing the code diff...")
-    response = ollama.generate(model='llama3:8b', prompt=prompt)
-    return response['response']
+    response =  client.chat.completions.create(model='openai/gpt-oss-120b', messages=[{"role": "user", "content": prompt}] , temperature=0.1)
+    return response.choices[0].message.content
 
 
 def calculate_final_candidate_score(semantic_score: float, graph_score: float, feedback_score: float) -> float:
@@ -75,8 +78,8 @@ def rank_candidate_commits(alert_message: str, candidates_data: list, rulebook_t
     """
     
     print(" AI ranking engine is scoring candidate vulnerabilities against rulebook metrics...")
-    response = ollama.generate(model='llama3:8b', prompt=prompt)
-    raw_text = response['response'].strip()
+    response =  client.chat.completions.create(model='openai/gpt-oss-120b', messages=[{"role": "user", "content": prompt}] , temperature=0.1)
+    raw_text = (response.choices[0].message.content or "").strip()
     
     try:
         match = re.search(r'\[.*\]', raw_text, re.DOTALL)
@@ -157,8 +160,8 @@ def generate_predictive_test_plan(jira_id: str, jira_title: str, jira_desc: str,
     Return ONLY a clean, professional enterprise markdown document starting with '###  BlastTrace Automated Test Blueprint'. Do not reference system prompts.
     """
     print(f" AI is compiling test plan blueprint matrices for {jira_id}...")
-    response = ollama.generate(model='llama3:8b', prompt=prompt)
-    return response['response']
+    response =  client.chat.completions.create(model='openai/gpt-oss-120b', messages=[{"role": "user", "content": prompt}] , temperature=0.1)
+    return response.choices[0].message.content
 
 
 if __name__ == "__main__":

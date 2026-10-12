@@ -258,8 +258,15 @@ async def process_alert_background(alert):
         print(traversal_results)
         
         if not traversal_results:
-            print(" Graph Traversal found no connected commits.")
-            return
+           print("[WARNING] No connected commits found.")
+
+           save_triage({
+        "alert_id": alert.alert_id,
+        "status": "Insufficient graph evidence",
+        "candidates": [],
+        "message": "No commit relationships were found for this alert."
+    })
+           return
 
         print(" Querying Engine for Root Cause...")
         rulebook_text = await fetch_live_github_rulebook()
@@ -510,8 +517,9 @@ async def get_incidents():
                 "service": r[3], "source": r[4], "triage": triage_by_alert.get(alert_id)
             })
         return incidents
-    except Exception:
-        return []
+    except Exception as e:
+        print(f"[INCIDENT ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/incidents/{alert_id}", tags=["Frontend Read"])
 async def get_incident(alert_id: str):

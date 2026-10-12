@@ -4,6 +4,7 @@ import hashlib
 import re
 import json
 from falkordb_manager import falkor_client
+from chroma_manager import chroma_manager
 
 USEFUL_EXTENSIONS = {".py", ".js", ".cls", ".trigger", ".html", ".xml", ".yml", ".md", ".json"}
 IGNORED_DIRS = {".git", "node_modules", "dist", "build", "venv", ".venv", "__pycache__"}
@@ -153,23 +154,48 @@ def index_repository(repo_path: str, repo_name: str) -> None:
                     "file_path": rel_path_str,
                     "repo_name": repo_name
                 })
+                # Remove old semantic chunks for this file
+                chroma_manager.collection.delete(where={"$and": [
+            {"repo_name": repo_name},
+            {"file_path": rel_path_str}
+        ]
+    }
+)
 
-                
                 for idx, chunk_text in enumerate(chunks):
-                    chunk_id = f"{repo_name}_{current_hash[:8]}_{idx}"
-                    query_chunk = """
-                    MERGE (comp:Component {name: $file_path, repo: $repo_name})
-                    MERGE (ch:CodeChunk {id: $chunk_id})
-                    SET ch.text = $text, ch.index = $idx
-                    MERGE (ch)-[:PART_OF]->(comp)
-                    """
-                    falkor_client.graph.query(query_chunk, {
-                        "file_path": rel_path_str,
-                        "repo_name": repo_name,
-                        "chunk_id": chunk_id,
-                        "text": chunk_text,
-                        "idx": idx
-                    })
+
+                # Unique ID shared by FalkorDB and ChromaDB
+                   file_hash = hashlib.sha256(rel_path_str.encode("utf-8")).hexdigest()[:16]
+                   chunk_id = f"{repo_name}_{file_hash}_{idx}"
+                # 1. Store in FalkorDB
+                   query_chunk = """
+    MERGE (comp:Component {name: $file_path, repo: $repo_name})
+    MERGE (ch:CodeChunk {id: $chunk_id})
+    SET ch.text = $text, ch.index = $idx
+    MERGE (ch)-[:PART_OF]->(comp)
+    """
+
+                   falkor_client.graph.query(query_chunk, {
+        "file_path": rel_path_str,
+        "repo_name": repo_name,
+        "chunk_id": chunk_id,
+        "text": chunk_text,
+        "idx": idx
+    })
+
+                   # 2. Store in ChromaDB for semantic search
+                   chroma_manager.add_context(
+        document_id=chunk_id,
+        text_content=chunk_text,
+        metadata={
+            "source_type": "code",
+            "repo_name": repo_name,
+            "file_path": rel_path_str,
+            "component_name": rel_path_str,
+            "service": service_name
+        }
+    )
+
                 
                 new_cache[rel_path_str] = {
                     "hash": current_hash,

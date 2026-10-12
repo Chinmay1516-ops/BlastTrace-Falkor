@@ -1,7 +1,6 @@
 from feedback_models import DeepFeedbackPayload
 from chroma_manager import chroma_manager
 
-
 def store_feedback_context(payload:DeepFeedbackPayload ) ->dict:
     """
     Convert resolved incident feedback into a text document
@@ -32,7 +31,7 @@ def query_past_feedback(search_text: str , n_results:int=3) ->str:
     and return them as clean text for an LLM prompt.
     """
     if not search_text:
-        return ValueError("search_text is required")
+        raise ValueError("search_text is required")
     results=chroma_manager.query_semantic_similarity(query_text=search_text, n_results =n_results, source_type="feedback")
     documents_grp=results.get("documents") or []
     metadata_grp=results.get("metadatas") or []
