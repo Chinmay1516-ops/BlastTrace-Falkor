@@ -9,20 +9,27 @@ class FalkorManager:
         query = "MERGE (j:JiraTicket {id: $id}) SET j.summary = $summary"
         self.graph.query(query, {"id": ticket_id, "summary": summary})
 
-    def link_commit_to_component(self, commit_hash: str, component_name: str, repo: str = "ebikes-lwc"):
+    def link_commit_to_component(self, commit_id: str, component_name: str, repo: str = "ebikes-lwc"):
         query = """
-        MERGE (c:Commit {hash: $hash})
+        MERGE (c:Commit {id: $commit_id})
         MERGE (comp:Component {name: $comp, repo: $repo})
         MERGE (c)-[:MODIFIES]->(comp)
         """
-        self.graph.query(query, {"hash": commit_hash, "comp": component_name, "repo": repo})
+        self.graph.query(query, {"commit_id": commit_id, "comp": component_name, "repo": repo})
 
-    def get_root_cause_path(self, component_name: str):
+    def get_candidate_root_cause_nodes(self, alert_id: str):
         query = """
-        MATCH path = (comp:Component {name: $comp})<-[:MODIFIES]-(c:Commit)
-        RETURN path, c.hash AS commit_hash
-        LIMIT 5
-        """
-        return self.graph.query(query, {"comp": component_name}).result_set
+        MATCH (a:Alert {id: $alert_id})
+          -[:TRIGGERS_ON]->(s:Service)
+          <-[:AFFECTS]-(d:Deployment)
+          <-[:DEPLOYED_IN]-(p:PR)
+          <-[:PART_OF]-(c:Commit)
+
+    RETURN DISTINCT c.id AS commit_id
+    """
+
+        result = self.graph.query(query,{"alert_id": alert_id} ).result_set
+
+        return [row[0] for row in result]
 
 falkor_client = FalkorManager()

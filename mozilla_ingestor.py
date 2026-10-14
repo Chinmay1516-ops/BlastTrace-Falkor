@@ -1,7 +1,8 @@
 import asyncio
 import httpx
 import json
-
+import subprocess
+REPO_PATH = r"C:\Users\sneha\ebikes-lwc"
 GITHUB_API_URL = "https://api.github.com/repos/kumarisneha4121-ops/ebikes-lwc/pulls?state=all&per_page=1"
 LOCAL_API_URL = "http://127.0.0.1:8000"
 
@@ -25,6 +26,22 @@ EBIKES_DIFF_2 = """--- a/force-app/main/default/lwc/productTileList/productTileL
 -publish(this.messageContext, PRODUCT_SELECTED_MESSAGE, { productid: event.detail });
 +publish(this.messageContext, PRODUCT_SELECTED_MESSAGE, { productId: event.detail?.id });"""
 
+def get_real_commit(sha):
+    full_sha = subprocess.check_output(
+        ["git", "rev-parse", sha],
+        cwd=REPO_PATH,
+        text=True
+    ).strip()
+
+    diff = subprocess.check_output(
+        ["git", "show", "--format=", full_sha],
+        cwd=REPO_PATH,
+        text=True,
+        encoding="utf-8",
+        errors="replace"
+    )
+
+    return full_sha, diff
 async def stream_webhook_data(client: httpx.AsyncClient, endpoint: str, payload: dict):
     try:
         response = await client.post(f"{LOCAL_API_URL}{endpoint}", json=payload)
@@ -86,24 +103,38 @@ async def ingest_real_data():
             commit_sha = "eb12345"
 
         print(f"\n  Pipeline active for PR-{pr_number} [Commit: {commit_sha}]")
+        commit_1, diff_1 = get_real_commit("6649310")
+        commit_2, diff_2 = get_real_commit("aa4a626")
 
         print("  Streaming Code Graph Layer: ProductController.cls (SFDC-2101)...")
         github_payload_1 = {
-            "pr_id": pr_number,
-            "ticket_id": "SFDC-2101",
-            "commit_id": f"{commit_sha}a",
-            "raw_diff": EBIKES_DIFF_1
-        }
+        "pr_id": pr_number,
+        "ticket_id": "SFDC-2101",
+        "commit_id": commit_1,
+        "raw_diff": diff_1
+}
         await stream_webhook_data(client, "/webhook/github", github_payload_1)
 
         print("  Streaming Code Graph Layer: productTileList.js (SFDC-2102)...")
         github_payload_2 = {
-            "pr_id": pr_number,
-            "ticket_id": "SFDC-2102",
-            "commit_id": f"{commit_sha}b",
-            "raw_diff": EBIKES_DIFF_2
-        }
+           "pr_id": pr_number,
+           "ticket_id": "SFDC-2102",
+            "commit_id": commit_2,
+            "raw_diff": diff_2
+} 
+        
         await stream_webhook_data(client, "/webhook/github", github_payload_2)
+        print("\n  Streaming Production Deployment Event...")
+
+        deployment_payload = {
+    "deployment_id": f"DEP-{pr_number}-prod",
+    "pr_id": pr_number,
+    "environment": "production",
+    "status": "success",
+    "service": "salesforce-lwc"
+}
+
+        await stream_webhook_data(client,"/webhook/deployment",deployment_payload)
 
         await test_pr_verification(client)
 

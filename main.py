@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
-
+from chroma_manager import chroma_manager
 from falkordb_manager import falkor_client
 from webhook_models import (
     JiraWebhookPayload, 
@@ -253,7 +253,7 @@ async def process_jira_background(ticket_id: str, title: str, description: str, 
 async def process_alert_background(alert):
     print("\n [BACKGROUND TASK] INITIATING BLASTTRACE RCA...")
     try:
-        traversal_results = falkor_client.get_root_cause_path(alert.service)
+        traversal_results = falkor_client.get_candidate_root_cause_nodes(alert.alert_id)
         print("Candidate commits returned by graph traversal:")
         print(traversal_results)
         
@@ -281,7 +281,7 @@ async def process_alert_background(alert):
             "alert_id": alert.alert_id,
             "status": "Triage Complete",
             "candidates": [{
-                "commit_id": traversal_results[0][1] if traversal_results else "Unknown",
+                "commit_id": traversal_results[0],
                 "reason": root_cause_analysis,
                 "rank": 1,
                 "final_score": 95.0
@@ -348,6 +348,21 @@ async def github_webhook(payload: GitHubWebhookPayload):
         functional_summary = analyze_code_diff(payload.raw_diff)
         
         falkor_client.graph.query("MATCH (c:Commit {id: $id}) SET c.diff_summary = $summary", {"id": payload.commit_id, "summary": functional_summary})
+        print(f"[CHROMA DEBUG] Attempting to index {payload.commit_id}", flush=True)
+        chroma_manager.add_context(
+               document_id=f"commit_{payload.commit_id}",
+                text_content=functional_summary,
+                metadata={
+                "source_type": "commit_diff",
+                "commit_id": payload.commit_id,
+                "repo_name": DEFAULT_REPO,
+                "pr_id": payload.pr_id,
+                "ticket_id": payload.ticket_id
+    }
+) 
+        print(f"[CHROMA DEBUG] Successfully indexed {payload.commit_id}", flush=True)
+
+        print(f"Commit {payload.commit_id} indexed in ChromaDB")
         return {"status": "Code Analyzed & Fused"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
