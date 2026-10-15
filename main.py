@@ -145,37 +145,55 @@ def _parse_unified_diff(raw_diff: str):
 
 
 def _build_incident_lineages(alert_id: str, triage_record):
+    """
+    Builds the visual lineage graph for each ranked candidate without using
+    unsupported MATCH shortestPath() syntax in FalkorDB.
+    """
     if not triage_record:
         return []
 
     lineages = []
+    service_name = triage_record.get("service") or "unknown-service"
+
     for candidate in triage_record.get("candidates", []):
         commit_id = candidate.get("commit_id")
         if not commit_id:
             continue
 
-        query = """
-        MATCH path = shortestPath((a:Alert {id: $alert_id})-[:*..8]-(c:Commit {id: $commit_id}))
-        RETURN nodes(path), relationships(path)
-        """
-        results = falkor_client.graph.query(
-            query, {"alert_id": str(alert_id), "commit_id": str(commit_id)}
-        ).result_set
-
-        if not results:
-            continue
+        ticket_id = candidate.get("ticket_id")
+        pr_id = candidate.get("pr_id")
+        deployment_id = candidate.get("deployment_id")
+        components = candidate.get("components") or []
 
         nodes = [
-            {
-                "id": n.properties.get("id") or n.properties.get("name"),
-                "type": list(n.labels)[0] if n.labels else "Node",
-            }
-            for n in results[0][0]
+            {"id": str(alert_id), "type": "Alert"},
+            {"id": str(service_name), "type": "Service"},
         ]
         edges = [
-            {"from": e.src_node, "to": e.dest_node, "relationship": e.relation}
-            for e in results[0][1]
+            {"from": str(alert_id), "to": str(service_name), "relationship": "TRIGGERS_ON"}
         ]
+
+        if deployment_id:
+            nodes.append({"id": str(deployment_id), "type": "Deployment"})
+            edges.append({"from": str(deployment_id), "to": str(service_name), "relationship": "AFFECTS"})
+
+        if pr_id:
+            nodes.append({"id": str(pr_id), "type": "PR"})
+            if deployment_id:
+                edges.append({"from": str(pr_id), "to": str(deployment_id), "relationship": "DEPLOYED_IN"})
+
+        nodes.append({"id": str(commit_id), "type": "Commit"})
+        if pr_id:
+            edges.append({"from": str(commit_id), "to": str(pr_id), "relationship": "PART_OF"})
+
+        for comp in components:
+            nodes.append({"id": str(comp), "type": "Component"})
+            edges.append({"from": str(commit_id), "to": str(comp), "relationship": "MODIFIES"})
+            edges.append({"from": str(comp), "to": str(service_name), "relationship": "BELONGS_TO"})
+
+        if ticket_id:
+            nodes.append({"id": str(ticket_id), "type": "JiraTicket"})
+            edges.append({"from": str(commit_id), "to": str(ticket_id), "relationship": "RESOLVES"})
 
         lineages.append({
             "commit_id": commit_id,
@@ -185,6 +203,7 @@ def _build_incident_lineages(alert_id: str, triage_record):
             "nodes": nodes,
             "edges": edges,
         })
+
     return lineages
 
 
@@ -315,6 +334,8 @@ async def process_alert_background(alert):
             save_triage({
                 "alert_id": alert.alert_id,
                 "service": alert.service,
+                "error_msg": alert.error_msg,
+                "source": getattr(alert, "source", "datadog"),
                 "status": "Insufficient graph evidence",
                 "candidates": [],
                 "message": "No commit relationships were found for this alert.",
@@ -417,50 +438,62 @@ async def github_webhook(payload: GitHubWebhookPayload):
     print(f" Linked JIRA Ticket: {payload.ticket_id}")
     try:
         parsed_files = _parse_unified_diff(payload.raw_diff)
-        query = """
-        MERGE (j:JiraTicket {id: $ticket_id})
-        MERGE (c:Commit {id: $commit_id})
-        MERGE (p:PR {id: $pr_id})
-        MERGE (c)-[:RESOLVES]->(j)
-        MERGE (c)-[:PART_OF]->(p)
-        SET c.changed_files = $changed_files, c.github_received_at = $time
-        """
-        falkor_client.graph.query(
-            query,
-            {
-                "ticket_id": payload.ticket_id,
-                "commit_id": payload.commit_id,
-                "pr_id": payload.pr_id,
-                "changed_files": json.dumps(parsed_files),
-                "time": _utc_now_iso(),
-            },
-        )
+        file_paths = [f.get("path") for f in parsed_files if f.get("path")]
 
         affected_services = set()
-        for file_item in parsed_files:
-            file_path = file_item.get("path")
-            if file_path:
-                falkor_client.link_commit_to_component(
-                    commit_id=payload.commit_id,
-                    component_name=file_path,
-                    repo=DEFAULT_REPO,
-                )
-                svc_res = falkor_client.graph.query(
-                    "MATCH (comp:Component {name: $path})-[:BELONGS_TO]->(s:Service) RETURN DISTINCT s.name",
-                    {"path": file_path},
-                ).result_set
-                for row in svc_res:
-                    if row and row[0]:
-                        affected_services.add(row[0])
+        for file_path in file_paths:
+            falkor_client.link_commit_to_component(
+                commit_id=payload.commit_id,
+                component_name=file_path,
+                repo=DEFAULT_REPO,
+            )
+            svc_res = falkor_client.graph.query(
+                "MATCH (comp:Component {name: $path})-[:BELONGS_TO]->(s:Service) RETURN DISTINCT s.name",
+                {"path": file_path},
+            ).result_set
+            for row in svc_res:
+                if row and row[0]:
+                    affected_services.add(row[0])
 
         print(f" Graph updated: JIRA -> Commit -> PR -> Components (Services: {list(affected_services)})")
         print(" Processing Raw Code Diff...")
         functional_summary = analyze_code_diff(payload.raw_diff)
 
+        now_iso = _utc_now_iso()
+        default_title = f"Code Change in {', '.join(file_paths)}" if file_paths else f"Ticket {payload.ticket_id}"
+
+        query = """
+        MERGE (j:JiraTicket {id: $ticket_id})
+        SET j.title = coalesce(j.title, $default_title),
+            j.description = coalesce(j.description, $summary),
+            j.jira_owner = coalesce(j.jira_owner, 'Engineering Team'),
+            j.jira_received_at = coalesce(j.jira_received_at, $time),
+            j.predicted_services = coalesce(j.predicted_services, $services),
+            j.predicted_files = coalesce(j.predicted_files, $files),
+            j.blueprint = coalesce(j.blueprint, $summary)
+        MERGE (c:Commit {id: $commit_id})
+        MERGE (p:PR {id: $pr_id})
+        MERGE (c)-[:RESOLVES]->(j)
+        MERGE (c)-[:PART_OF]->(p)
+        SET c.changed_files = $changed_files,
+            c.github_received_at = $time,
+            c.diff_summary = $summary
+        """
         falkor_client.graph.query(
-            "MATCH (c:Commit {id: $id}) SET c.diff_summary = $summary",
-            {"id": payload.commit_id, "summary": functional_summary},
+            query,
+            {
+                "ticket_id": payload.ticket_id,
+                "default_title": default_title,
+                "summary": functional_summary,
+                "services": json.dumps(list(affected_services)),
+                "files": json.dumps(file_paths),
+                "commit_id": payload.commit_id,
+                "pr_id": payload.pr_id,
+                "changed_files": json.dumps(parsed_files),
+                "time": now_iso,
+            },
         )
+
         print(f"[CHROMA DEBUG] Attempting to index {payload.commit_id}", flush=True)
         chroma_manager.add_context(
             document_id=f"commit_{payload.commit_id}",
@@ -682,58 +715,68 @@ async def get_frontend_overview():
 async def get_software_factory():
     try:
         results = falkor_client.graph.query(
-            "MATCH (j:JiraTicket) RETURN j.id, j.title, j.description, j.blueprint, j.jira_received_at, j.predicted_services, j.predicted_files"
+            """
+            MATCH (j:JiraTicket)
+            RETURN j.id, j.title, j.description, j.blueprint, j.jira_received_at,
+                   j.predicted_services, j.predicted_files, j.jira_owner
+            ORDER BY j.jira_received_at DESC
+            """
         ).result_set
         return [
             {
                 "ticket_id": r[0],
-                "title": r[1],
-                "description": r[2],
-                "blueprint": r[3],
+                "title": r[1] or f"Ticket {r[0]}",
+                "description": r[2] or "",
+                "blueprint": r[3] or "",
                 "jira_received_at": r[4],
                 "predicted_services": _parse_json_attribute(r[5]) or [],
                 "predicted_files": _parse_json_attribute(r[6]) or [],
+                "jira_owner": r[7] or "Engineering Team",
             }
             for r in results
         ]
-    except Exception:
+    except Exception as e:
+        print(f"[SOFTWARE FACTORY ERROR] {e}")
         return []
 
 
 @app.get("/api/software-factory/{ticket_id}", tags=["Frontend Read"])
 async def get_software_factory_ticket(ticket_id: str):
-    try:
-        j_res = falkor_client.graph.query(
-            "MATCH (j:JiraTicket {id: $id}) RETURN j.title, j.description, j.blueprint, j.predicted_services, j.predicted_files",
-            {"id": ticket_id},
-        ).result_set
-        if not j_res:
-            raise HTTPException(status_code=404)
+    j_res = falkor_client.graph.query(
+        """
+        MATCH (j:JiraTicket {id: $id})
+        RETURN j.title, j.description, j.blueprint, j.predicted_services,
+               j.predicted_files, j.jira_owner, j.jira_received_at
+        """,
+        {"id": ticket_id},
+    ).result_set
+    if not j_res:
+        raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
 
-        c_res = falkor_client.graph.query(
-            "MATCH (c:Commit)-[:RESOLVES]->(j:JiraTicket {id: $id}) RETURN c.id, c.diff_summary, c.changed_files",
-            {"id": ticket_id},
-        ).result_set
-        commits = [
-            {
-                "commit_id": r[0],
-                "diff_summary": r[1],
-                "changed_files": _parse_json_attribute(r[2]) or [],
-            }
-            for r in c_res
-        ]
-
-        return {
-            "ticket_id": ticket_id,
-            "title": j_res[0][0],
-            "description": j_res[0][1],
-            "blueprint": j_res[0][2],
-            "predicted_services": _parse_json_attribute(j_res[0][3]) or [],
-            "predicted_files": _parse_json_attribute(j_res[0][4]) or [],
-            "commits": commits,
+    c_res = falkor_client.graph.query(
+        "MATCH (c:Commit)-[:RESOLVES]->(j:JiraTicket {id: $id}) RETURN c.id, c.diff_summary, c.changed_files",
+        {"id": ticket_id},
+    ).result_set
+    commits = [
+        {
+            "commit_id": r[0],
+            "diff_summary": r[1],
+            "changed_files": _parse_json_attribute(r[2]) or [],
         }
-    except Exception:
-        raise HTTPException(status_code=404)
+        for r in c_res
+    ]
+
+    return {
+        "ticket_id": ticket_id,
+        "title": j_res[0][0] or f"Ticket {ticket_id}",
+        "description": j_res[0][1] or "",
+        "blueprint": j_res[0][2] or "",
+        "predicted_services": _parse_json_attribute(j_res[0][3]) or [],
+        "predicted_files": _parse_json_attribute(j_res[0][4]) or [],
+        "jira_owner": j_res[0][5] or "Engineering Team",
+        "jira_received_at": j_res[0][6],
+        "commits": commits,
+    }
 
 
 @app.get("/api/incidents", tags=["Frontend Read"])
@@ -743,9 +786,12 @@ async def get_incidents():
             "MATCH (a:Alert) RETURN a.id, a.message, a.status, a.service, a.source"
         ).result_set
         triage_by_alert = {str(r.get("alert_id")): r for r in list_triage() if r.get("alert_id")}
+        seen_ids = set()
         incidents = []
+
         for r in results:
             alert_id = str(r[0])
+            seen_ids.add(alert_id)
             incidents.append({
                 "alert_id": alert_id,
                 "message": r[1],
@@ -754,6 +800,19 @@ async def get_incidents():
                 "source": r[4],
                 "triage": triage_by_alert.get(alert_id),
             })
+
+        # Also include any persisted triage records whose Alert node was cleared
+        for alert_id, tr in triage_by_alert.items():
+            if alert_id not in seen_ids:
+                incidents.append({
+                    "alert_id": alert_id,
+                    "message": tr.get("error_msg") or "Incident Alert",
+                    "status": tr.get("status") or "Triage Complete",
+                    "service": tr.get("service") or "unknown-service",
+                    "source": tr.get("source") or "datadog",
+                    "triage": tr,
+                })
+
         return incidents
     except Exception as e:
         print(f"[INCIDENT ERROR] {e}")
@@ -762,24 +821,27 @@ async def get_incidents():
 
 @app.get("/api/incidents/{alert_id}", tags=["Frontend Read"])
 async def get_incident(alert_id: str):
-    try:
-        res = falkor_client.graph.query(
-            "MATCH (a:Alert {id: $id}) RETURN a.message, a.service, a.source",
-            {"id": alert_id},
-        ).result_set
-        if not res:
-            raise HTTPException(status_code=404)
-        triage_record = get_triage(alert_id)
-        return {
-            "alert_id": alert_id,
-            "message": res[0][0],
-            "service": res[0][1],
-            "source": res[0][2],
-            "triage": triage_record,
-            "lineages": _build_incident_lineages(alert_id, triage_record),
-        }
-    except Exception:
-        raise HTTPException(status_code=404)
+    res = falkor_client.graph.query(
+        "MATCH (a:Alert {id: $id}) RETURN a.message, a.service, a.source",
+        {"id": str(alert_id)},
+    ).result_set
+    triage_record = get_triage(str(alert_id))
+
+    if not res and not triage_record:
+        raise HTTPException(status_code=404, detail=f"Incident {alert_id} not found")
+
+    message = res[0][0] if res else (triage_record.get("error_msg") if triage_record else "")
+    service = res[0][1] if res else (triage_record.get("service") if triage_record else "unknown-service")
+    source = res[0][2] if res else (triage_record.get("source") if triage_record else "datadog")
+
+    return {
+        "alert_id": str(alert_id),
+        "message": message,
+        "service": service,
+        "source": source,
+        "triage": triage_record,
+        "lineages": _build_incident_lineages(str(alert_id), triage_record),
+    }
 
 
 @app.post("/system/reset", tags=["System Management"])

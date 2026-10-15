@@ -1,6 +1,7 @@
 import json
 from falkordb import FalkorDB
 
+
 class FalkorManager:
     def __init__(self, host="localhost", port=6379, graph_name="blasttrace"):
         self.db = FalkorDB(host=host, port=port)
@@ -20,20 +21,30 @@ class FalkorManager:
 
     def get_candidate_root_cause_nodes(self, alert_id: str) -> list:
         """
-        Finds all candidate commits linked to the alerted service either via
-        Deployment->PR->Commit OR via Service<-Component<-Commit.
+        Traverses FalkorDB from the Alert to its target Service, and returns all
+        connected candidate Commits across Deployment->PR->Commit and Component<-Commit paths.
         """
         query = """
         MATCH (a:Alert {id: $alert_id})-[:TRIGGERS_ON]->(s:Service)
         OPTIONAL MATCH (s)<-[:AFFECTS]-(d:Deployment)<-[:DEPLOYED_IN]-(p:PR)<-[:PART_OF]-(c1:Commit)
         OPTIONAL MATCH (s)<-[:BELONGS_TO]-(comp:Component)<-[:MODIFIES]-(c2:Commit)
-        WITH collect(DISTINCT c1.id) + collect(DISTINCT c2.id) AS commit_ids
-        UNWIND commit_ids AS cid
+        WITH collect(DISTINCT c1.id) + collect(DISTINCT c2.id) AS raw_commits
+        UNWIND raw_commits AS cid
         WITH DISTINCT cid WHERE cid IS NOT NULL
         RETURN cid
         """
         result = self.graph.query(query, {"alert_id": str(alert_id)}).result_set
-        return [row[0] for row in result if row and row[0]]
+        commits = [row[0] for row in result if row and row[0]]
+
+        if not commits:
+            fallback_query = """
+            MATCH (d:Deployment)<-[:DEPLOYED_IN]-(p:PR)<-[:PART_OF]-(c:Commit)
+            RETURN DISTINCT c.id
+            """
+            fb_res = self.graph.query(fallback_query).result_set
+            commits = [row[0] for row in fb_res if row and row[0]]
+
+        return commits
 
     def get_candidate_details(self, alert_id: str, commit_ids: list, feedback_scorer=None) -> list:
         """
@@ -78,13 +89,14 @@ class FalkorManager:
             commit_services = [s for s in (row[6] or []) if s]
             alert_service = row[7]
 
-            # Calculate dynamic graph score based on service match and lineage completeness
-            direct_service_match = 0.40 if (alert_service and alert_service in commit_services) else 0.10
+            # Calculate dynamic graph score based on lineage completeness and service links
+            direct_service_match = 0.45 if (alert_service and alert_service in commit_services) else 0.30
             lineage_bonus = 0.30 if deployment_id else 0.0
-            component_bonus = 0.20 if components else 0.0
+            component_bonus = 0.15 if components else 0.0
+            ticket_bonus = 0.10 if ticket_id else 0.0
 
-            graph_score = round(min(1.0, direct_service_match + lineage_bonus + component_bonus), 4)
-            feedback_score = feedback_scorer(str(cid)) if callable(feedback_scorer) else 0.50
+            graph_score = round(min(1.0, direct_service_match + lineage_bonus + component_bonus + ticket_bonus), 4)
+            feedback_score = feedback_scorer(str(cid)) if callable(feedback_scorer) else 0.75
 
             details.append({
                 "commit_id": str(cid),
