@@ -1,9 +1,8 @@
 try:
-    from mcp.server.fastmcp import FastMCP
+    from mcp.server.fastmcp import FastMCP  # type: ignore
     mcp = FastMCP("BlastTrace-FalkorDB-MCP")
     mcp_tool = mcp.tool
 except ImportError:
-    # Fallback decorator so the app runs even if 'mcp' package isn't installed
     mcp = None
     def mcp_tool():
         def decorator(func):
@@ -45,7 +44,7 @@ def get_incident_triage_leaderboard(alert_id: str) -> dict:
     return get_triage(alert_id) or {}
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     if mcp:
         mcp.run()
     else:

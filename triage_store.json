@@ -1,0 +1,138 @@
+{
+    "0": {
+        "alert_id": "0",
+        "service": "product_explorer",
+        "error_msg": "[Triggered] [TEST] Test Webhook - %%%\n@webhook-blasttracewebhook\n\nTest notification triggered by chinmaypingale2507@gmail.com.\n\n[![Metric Graph](https://snapshot.datadoghq.com/api/v2/snapshot/view/public/2y/2b5adf63-c657-11f1-a2b2-665ee7f6d25c/1792028323570-b6571165-0c47-48d5-89bf-f3e7089cf1db.png)](https://app.datadoghq.com/monitors/0?from_ts=1792027423000&to_ts=1792028623000&event_id=8854435079060276549&link_source=monitor_notif&link_monitor_id=0&link_event_id=8854435079060276549&link_event_ts=1792028323)\n\n**system.load.1** over ***** was **> 1.0** on average during the **last 5m**.\n\nThe monitor was last triggered at Thu Oct 15 2026 01:38:43 UTC.\n\n- - -\n\n[[Monitor Status](https://app.datadoghq.com/monitors/0?from_ts=1792027423000&to_ts=1792028623000&event_id=8854435079060276549&link_source=monitor_notif&link_monitor_id=0&link_event_id=8854435079060276549&link_event_ts=1792028323)] \u00b7 [[Edit Monitor](https://app.datadoghq.com/monitors/0/edit?link_source=monitor_notif&link_monitor_id=0&link_event_id=8854435079060276549&link_event_ts=1792028323)] \u00b7 [[Related Logs](https://app.datadoghq.com/logs?query=%2A&from_ts=1792028023000&to_ts=1792028323000&live=false&link_source=monitor_notif&link_monitor_id=0&link_event_id=8854435079060276549&link_event_ts=1792028323)]\n%%%",
+        "source": "datadog",
+        "status": "Triage Complete",
+        "candidates": [
+            {
+                "rank": 1,
+                "commit_id": "66493103c43504231bdb23546d5033c9461257ea",
+                "semantic_score": 0.94,
+                "chroma_vector_score": 0.36,
+                "graph_score": 0.85,
+                "feedback_score": 0.75,
+                "final_score": 0.89,
+                "reason": "Injects `Category__c = '__NO_MATCH__'` when categories filter is null, forcing product queries to return zero rows and breaking catalog visibility.",
+                "ticket_id": "SFDC-2101",
+                "pr_id": "1",
+                "deployment_id": "DEP-1-salesforce-backend",
+                "diff_summary": "The patch adds a guard for a missing\u202fcategories\u202ffilter in\u202fProductController.getProducts(): if\u202ffilters.categories\u202fis\u202fnull\u202fthe method now injects the clause\u202f`Category__c = '__NO_MATCH__'` into the SOQL\u2011where\u2011criteria list, guaranteeing that the query will return zero rows. Previously a null\u202fcategories\u202fvalue was simply ignored, allowing the query to match any category and potentially returning all products. This change means that callers who omit the category filter (or send it as null) will now see an empty product list instead of the full catalog, which can affect UI listings, downstream pricing or inventory calculations, and any business logic that relied on \u201cno category filter = all categories.\u201d",
+                "changed_files": [
+                    {
+                        "path": "force-app/main/default/classes/ProductController.cls",
+                        "old_path": "force-app/main/default/classes/ProductController.cls",
+                        "status": "modified",
+                        "additions": 3,
+                        "deletions": 0
+                    }
+                ],
+                "components": [
+                    "force-app/main/default/classes/ProductController.cls"
+                ],
+                "hops": 1
+            },
+            {
+                "rank": 2,
+                "commit_id": "aa4a626ff515ef168b12d956f6dfe201b90761f0",
+                "semantic_score": 0.25,
+                "chroma_vector_score": 0.4,
+                "graph_score": 0.85,
+                "feedback_score": 0.75,
+                "final_score": 0.47,
+                "reason": "Adds optional chaining to publish only an ID; defensive change that does not alter business logic or cause outages.",
+                "ticket_id": "SFDC-2102",
+                "pr_id": "1",
+                "deployment_id": "DEP-1-ebikes-lwc",
+                "diff_summary": "The change narrows the data published on the **PRODUCT_SELECTED_MESSAGE** channel: instead of forwarding the entire `event.detail` payload (which could be an object, a primitive, or even undefined), the code now extracts only the `id` property (`event.detail?.id`). This means any component that subscribes to this message will now receive just a product\u2011ID value (or `undefined` if the event payload is missing), eliminating the previous risk of sending an entire product record or causing a runtime error when `event.detail` was null/undefined. Consequently, downstream logic must now rely on a simple ID rather than a full product object, tightening the contract between the tile list and its listeners and reducing coupling and potential data\u2011leakage.",
+                "changed_files": [
+                    {
+                        "path": "force-app/main/default/lwc/productTileList/productTileList.js",
+                        "old_path": "force-app/main/default/lwc/productTileList/productTileList.js",
+                        "status": "modified",
+                        "additions": 1,
+                        "deletions": 1
+                    }
+                ],
+                "components": [
+                    "force-app/main/default/lwc/productTileList/productTileList.js"
+                ],
+                "hops": 1
+            }
+        ]
+    },
+    "TRC-99812-APP": {
+        "alert_id": "TRC-99812-APP",
+        "service": "salesforce-lwc",
+        "status": "validated",
+        "candidates": [
+            {
+                "rank": 1,
+                "commit_id": "655eca5a",
+                "semantic_score": 0.8,
+                "graph_score": 0.6,
+                "feedback_score": 0.95,
+                "final_score": 0.77,
+                "reason": "This change introduces a new condition for filtering products by category, which could potentially alter query criteria and cause the observed 'empty visibility' error, aligning with the 'runtime spike' description.",
+                "ticket_id": "SFDC-2101",
+                "jira_owner": "Unassigned",
+                "diff_summary": "The change in this code snippet introduces a new condition to filter products by category. Previously, the ProductController class would only apply price and other filters specified. Now, if a user specifies categories as part of their filter criteria, an additional \"Category__c != '__NO_MATCH__'\" criterion is added to the query. This means that users will now be able to refine their search results not only by maximum price, but also by specific product categories, which can significantly impact the effectiveness and efficiency of product discovery within the system.",
+                "path": [
+                    "alert",
+                    "service",
+                    "jira",
+                    "commit"
+                ]
+            },
+            {
+                "rank": 2,
+                "commit_id": "lwc_commit_001",
+                "semantic_score": 0.1,
+                "graph_score": 0.6,
+                "feedback_score": 0.5,
+                "final_score": 0.28,
+                "reason": "The AI analysis suggests this change introduces a delay in product loading, which is not directly related to the incident's 'runtime spike' description.",
+                "ticket_id": "SFDC-99",
+                "jira_owner": "Unassigned",
+                "diff_summary": "This code change introduces a 4.2 second delay in the system's product loading functionality, effectively introducing a artificial latency in the loadProducts() method. This change likely serves a testing purpose, allowing developers to simulate a slow-loading scenario or verify the system's behavior under a certain type of latency. The business impact is that the system's product loading process will now take approximately 4.2 seconds longer than before, which may have implications for user experience, system performance, and potentially even affecting the overall user interface and workflow.",
+                "path": [
+                    "alert",
+                    "service",
+                    "deployment",
+                    "pr",
+                    "commit"
+                ]
+            },
+            {
+                "rank": 3,
+                "commit_id": "655eca5b",
+                "semantic_score": 0.1,
+                "graph_score": 0.6,
+                "feedback_score": 0.35,
+                "final_score": 0.26,
+                "reason": "This change adds null safety to a message publishing operation, which does not impact query results or visibility and is unlikely to cause the observed runtime spike.",
+                "ticket_id": "SFDC-2102",
+                "jira_owner": "Unassigned",
+                "diff_summary": "The functional change in this system is the addition of null safety when publishing a message to indicate that a product has been selected. Previously, the `productid` property was being passed without any checks, which could potentially lead to errors if the `event.detail` object did not contain an `id` property. With this change, the code now checks if `event.detail?.id` is truthy before publishing the message, ensuring that the system remains stable and robust in the face of unexpected data. This modification has a direct impact on the overall reliability and maintainability of the application, as it reduces the likelihood of errors and makes the code more resilient to changes in the underlying data structure.",
+                "path": [
+                    "alert",
+                    "service",
+                    "jira",
+                    "commit",
+                    "pr",
+                    "commit"
+                ]
+            }
+        ],
+        "feedback": {
+            "correct_commit_id": "655eca5a",
+            "incorrect_commit_ids": [
+                "lwc_commit_001",
+                "655eca5b"
+            ],
+            "engineer_name": "Chinmay",
+            "comment": "the given root cause analysis is correct."
+        }
+    }
+}

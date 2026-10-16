@@ -52,6 +52,47 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def restore_indexed_graph_from_chroma():
+    """
+    Automatically populates FalkorDB Component -> Service nodes from the
+    pre-indexed ChromaDB folder so judges/teammates never have to run codebase_indexer.py.
+    """
+    try:
+        existing = falkor_client.graph.query("MATCH (c:Component) RETURN count(c)").result_set
+        if existing and existing[0][0] > 0:
+            print(f" [STARTUP] FalkorDB already has {existing[0][0]} indexed components.")
+            return
+
+        collection = chroma_manager.collection.get(where={"source_type": "code"}, include=["metadatas"])
+        metadatas = collection.get("metadatas") or []
+        if not metadatas:
+            return
+
+        restored = 0
+        for meta in metadatas:
+            if not meta:
+                continue
+            file_path = meta.get("file_path") or meta.get("component_name")
+            service = meta.get("service") or "product_explorer"
+            repo = meta.get("repo_name") or DEFAULT_REPO
+            if file_path:
+                falkor_client.graph.query(
+                    """
+                    MERGE (s:Service {name: $service})
+                    MERGE (c:Component {name: $path, repo: $repo})
+                    MERGE (c)-[:BELONGS_TO]->(s)
+                    MERGE (p:Service {name: 'product_explorer'})
+                    MERGE (c)-[:BELONGS_TO]->(p)
+                    """,
+                    {"service": service, "path": file_path, "repo": repo},
+                )
+                restored += 1
+        print(f" [STARTUP] Auto-restored {restored} indexed code chunks into FalkorDB! No codebase_indexer.py needed.")
+    except Exception as e:
+        print(f" [STARTUP] Graph auto-restore skipped: {e}")
+
+
 def _node_type(data: dict) -> str:
     return str(data.get("node_type") or data.get("type") or "").lower()
 
@@ -145,10 +186,6 @@ def _parse_unified_diff(raw_diff: str):
 
 
 def _build_incident_lineages(alert_id: str, triage_record):
-    """
-    Builds the visual lineage graph for each ranked candidate without using
-    unsupported MATCH shortestPath() syntax in FalkorDB.
-    """
     if not triage_record:
         return []
 
@@ -801,7 +838,6 @@ async def get_incidents():
                 "triage": triage_by_alert.get(alert_id),
             })
 
-        # Also include any persisted triage records whose Alert node was cleared
         for alert_id, tr in triage_by_alert.items():
             if alert_id not in seen_ids:
                 incidents.append({
