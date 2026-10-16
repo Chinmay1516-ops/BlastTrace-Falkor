@@ -10,3 +10,5 @@ ebikes-lwc.index_cache.json
 ngrok.exe
 triage_store.json
 *.gexf
+chroma_data/
+chroma_data

@@ -270,5 +270,5 @@ def index_repository(repo_path: str, repo_name: str) -> None:
 
 if __name__ == "__main__":
     REPO_NAME = os.getenv("BLASTTRACE_REPO_NAME", "ebikes-lwc")
-    REPO_PATH = os.getenv("EBIKES_REPO_PATH", r"C:\Users\Chinmay\ebikes-lwc")
+    REPO_PATH = os.getenv("EBIKES_REPO_PATH", r"C:\Users\sneha\ebikes-lwc")
     index_repository(REPO_PATH, REPO_NAME)

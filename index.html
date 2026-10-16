@@ -127,6 +127,26 @@
     box-shadow:0 0 14px rgba(31,98,238,.35);
     animation:scan 9s linear infinite;
   }
+  .how-modal{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:100002;
+    background:rgba(8,18,42,.62);padding:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)
+  }
+  .how-modal.show{display:flex}
+  .how-modal-panel{
+    width:min(1120px,96vw);max-height:90vh;overflow:auto;border-radius:20px;background:#fff;
+    border:1px solid rgba(29,67,145,.12);box-shadow:0 24px 70px rgba(9,25,67,.28);padding:18px 18px 20px
+  }
+  .how-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}
+  .how-modal-kicker{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#6e82a8}
+  .how-modal-title{margin:6px 0 0;font-size:26px;line-height:1.15;color:#0b204e;font-weight:750}
+  .how-modal-copy{margin:8px 0 0;font-size:13px;line-height:1.55;color:#5f7296;max-width:760px}
+  .how-modal-close{
+    border:1px solid rgba(24,57,124,.12);background:#fff;color:#173362;border-radius:10px;padding:10px 14px;
+    font:700 12px/1 inherit;cursor:pointer;box-shadow:0 10px 24px rgba(19,51,113,.08)
+  }
+  .how-modal-figure{margin:0;overflow:auto;max-height:70vh;border:1px solid rgba(29,67,145,.11);border-radius:14px;background:#fff}
+  .how-modal-figure img{display:block;width:100%;min-width:1100px;height:auto;border-radius:12px;max-width:none;image-rendering:auto}
+  .how-modal-caption{margin-top:10px;font-size:12px;line-height:1.55;color:#627392}
 
   @keyframes titleIn{to{opacity:1;transform:none}}
   @keyframes chromeIn{to{opacity:1}}
@@ -145,6 +165,7 @@
     .float-card{display:none}
     .signals{gap:10px 14px;padding-left:16px;padding-right:16px}
     .signal{font-size:8.5px}.signal-label{width:100%;text-align:center}
+    .how-modal{padding:14px}.how-modal-panel{padding:14px}.how-modal-title{font-size:21px}
   }
   @media(prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important}
@@ -187,7 +208,7 @@
     <p class="sub">BlastTrace turns tickets, code changes, telemetry and historical incidents into one living dependency map—so teams can see the blast radius before and after something breaks.</p>
     <div class="hero-actions">
       <button class="go" id="openIncident">Start investigation →</button>
-      <button class="ghost">See how it works</button>
+      <button class="ghost" id="openHowItWorks">See how it works</button>
     </div>
   </div>
 </main>
@@ -223,8 +244,48 @@
   <span class="signal">POST-MORTEMS</span>
 </div>
 
+<div class="how-modal" id="howItWorksModal" aria-hidden="true">
+  <div class="how-modal-panel" role="dialog" aria-modal="true" aria-labelledby="howItWorksTitle">
+    <div class="how-modal-head">
+      <div>
+        <div class="how-modal-kicker">End-to-end workflow</div>
+        <h2 class="how-modal-title" id="howItWorksTitle">BlastTrace — How it works</h2>
+        <p class="how-modal-copy">This is the full 21-step workflow showing how Engine A (Software Factory) and Engine B (Observability Engine) connect Jira, code changes, deployments, telemetry, triage, and institutional memory.</p>
+      </div>
+      <button type="button" class="how-modal-close" id="closeHowItWorks">Close</button>
+    </div>
+    <figure class="how-modal-figure">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODEwIDU2MCIgd2lkdGg9IjE4MTAiIGhlaWdodD0iNTYwIj48cmVjdCB3aWR0aD0iMTgxMCIgaGVpZ2h0PSI1NjAiIHJ4PSIxOCIgZmlsbD0iI2ZmZmZmZiIvPjxzdHlsZT50ZXh0e2ZvbnQtZmFtaWx5OkFyaWFsLEhlbHZldGljYSxzYW5zLXNlcmlmfS5oZWFke2ZvbnQtc2l6ZToyNHB4O2ZvbnQtd2VpZ2h0OjcwMDtmaWxsOiMxMjJkNWR9LnN1Yntmb250LXNpemU6MTRweDtmaWxsOiM2MjczOTF9LnRpdGxle2ZvbnQtc2l6ZToxNXB4O2ZvbnQtd2VpZ2h0OjcwMDtmaWxsOiMxOTM0NjB9LmRlc2N7Zm9udC1zaXplOjExLjVweDtmaWxsOiM1MTYxN2N9Lm51bXtmb250LXNpemU6MTNweDtmb250LXdlaWdodDo3MDA7ZmlsbDojZmZmfTwvc3R5bGU+PHRleHQgeD0iMjgiIHk9IjM2IiBjbGFzcz0iaGVhZCI+Qmxhc3RUcmFjZSDigJQgRW5kLXRvLUVuZCBXb3JrZmxvdyAoMjEgU3RlcHMpPC90ZXh0Pjx0ZXh0IHg9IjI4IiB5PSI1OSIgY2xhc3M9InN1YiI+SmlyYSBpbnRha2Ug4oaSIHByZWRpY3RpdmUgcGxhbm5pbmcg4oaSIHZlcmlmaWVkIGRlcGxveW1lbnQg4oaSIGR1YWwtdGVsZW1ldHJ5IG1vbml0b3Jpbmcg4oaSIGNvcnJlbGF0ZWQgdHJpYWdlIOKGkiBpbnN0aXR1dGlvbmFsIGxlYXJuaW5nPC90ZXh0PjxyZWN0IHg9IjIwIiB5PSI3OCIgd2lkdGg9IjE3NzAiIGhlaWdodD0iMjU4IiByeD0iMTQiIGZpbGw9IiNlZGY3ZmQiIHN0cm9rZT0iI2QwZTZmNiIvPjx0ZXh0IHg9IjM2IiB5PSIxMDgiIGNsYXNzPSJoZWFkIiBmb250LXNpemU9IjIxIj5FbmdpbmUgQSDigJQgU29mdHdhcmUgRmFjdG9yeTwvdGV4dD48dGV4dCB4PSIzNiIgeT0iMTI4IiBjbGFzcz0ic3ViIj5Qcm9hY3RpdmUgcGlwZWxpbmU8L3RleHQ+PHJlY3QgeD0iMjAiIHk9IjM0NCIgd2lkdGg9IjE3NzAiIGhlaWdodD0iMTk3IiByeD0iMTQiIGZpbGw9IiNmZmZhZjEiIHN0cm9rZT0iI2YwZTVkMyIvPjx0ZXh0IHg9IjM2IiB5PSIzNzQiIGNsYXNzPSJoZWFkIiBmb250LXNpemU9IjIxIj5FbmdpbmUgQiDigJQgT2JzZXJ2YWJpbGl0eSBFbmdpbmU8L3RleHQ+PHRleHQgeD0iMzYiIHk9IjM5NCIgY2xhc3M9InN1YiI+UmVhY3RpdmUgdHJpYWdlPC90ZXh0PjxyZWN0IHg9IjQwIiB5PSIxNTgiIHdpZHRoPSIyMjYiIGhlaWdodD0iODQiIHJ4PSIxMSIgZmlsbD0iI2UzZjJmZSIgc3Ryb2tlPSIjNzVhZmUyIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjI1MCIgY3k9IjE3MyIgcj0iMTMiIGZpbGw9IiMyMzYxOWQiLz48dGV4dCB4PSIyNTAiIHk9IjE3OCIgY2xhc3M9Im51bSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+MTwvdGV4dD48dGV4dCB4PSI1MiIgeT0iMTkwIiBjbGFzcz0idGl0bGUiIGZvbnQtc2l6ZT0iMTQiPkpJUkEgcmVxdWlyZW1lbnQ8L3RleHQ+PHRleHQgeD0iNTIiIHk9IjIxMCIgY2xhc3M9ImRlc2MiPlJlcXVpcmVtZW50IGxvZ2dlZDwvdGV4dD48cmVjdCB4PSIyOTIiIHk9IjE1OCIgd2lkdGg9IjIyNiIgaGVpZ2h0PSI4NCIgcng9IjExIiBmaWxsPSIjZTNmMmZlIiBzdHJva2U9IiM3NWFmZTIiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iNTAyIiBjeT0iMTczIiByPSIxMyIgZmlsbD0iIzIzNjE5ZCIvPjx0ZXh0IHg9IjUwMiIgeT0iMTc4IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4yPC90ZXh0Pjx0ZXh0IHg9IjMwNCIgeT0iMTkwIiBjbGFzcz0idGl0bGUiIGZvbnQtc2l6ZT0iMTQiPktub3dsZWRnZSBncmFwaCBub2RlPC90ZXh0Pjx0ZXh0IHg9IjMwNCIgeT0iMjEwIiBjbGFzcz0iZGVzYyI+VGlja2V0IG5vZGUgY3JlYXRlZDwvdGV4dD48cmVjdCB4PSI1NDQiIHk9IjE1OCIgd2lkdGg9IjIyNiIgaGVpZ2h0PSI4NCIgcng9IjExIiBmaWxsPSIjZjJlY2ZmIiBzdHJva2U9IiNhNThiZDIiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iNzU0IiBjeT0iMTczIiByPSIxMyIgZmlsbD0iIzY4NDliNSIvPjx0ZXh0IHg9Ijc1NCIgeT0iMTc4IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4zPC90ZXh0Pjx0ZXh0IHg9IjU1NiIgeT0iMTkwIiBjbGFzcz0idGl0bGUiIGZvbnQtc2l6ZT0iMTQiPlByZWRpY3RpdmUgZGVwZW5kZW5jeTwvdGV4dD48dGV4dCB4PSI1NTYiIHk9IjIxMCIgY2xhc3M9ImRlc2MiPk1hcHMgYmxhc3QgcmFkaXVzPC90ZXh0PjxyZWN0IHg9Ijc5NiIgeT0iMTU4IiB3aWR0aD0iMjI2IiBoZWlnaHQ9Ijg0IiByeD0iMTEiIGZpbGw9IiNmMmVjZmYiIHN0cm9rZT0iI2E1OGJkMiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48Y2lyY2xlIGN4PSIxMDA2IiBjeT0iMTczIiByPSIxMyIgZmlsbD0iIzY4NDliNSIvPjx0ZXh0IHg9IjEwMDYiIHk9IjE3OCIgY2xhc3M9Im51bSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+NDwvdGV4dD48dGV4dCB4PSI4MDgiIHk9IjE5MCIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjE0Ij5SdWxlYm9vayByZXRyaWV2YWw8L3RleHQ+PHRleHQgeD0iODA4IiB5PSIyMTAiIGNsYXNzPSJkZXNjIj5GZXRjaGVzIHNraWxscy5tZDwvdGV4dD48cmVjdCB4PSIxMDQ4IiB5PSIxNTgiIHdpZHRoPSIyMjYiIGhlaWdodD0iODQiIHJ4PSIxMSIgZmlsbD0iI2YyZWNmZiIgc3Ryb2tlPSIjYTU4YmQyIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjEyNTgiIGN5PSIxNzMiIHI9IjEzIiBmaWxsPSIjNjg0OWI1Ii8+PHRleHQgeD0iMTI1OCIgeT0iMTc4IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj41PC90ZXh0Pjx0ZXh0IHg9IjEwNjAiIHk9IjE5MCIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjE0Ij5UZXN0IHBsYW4gZ2VuZXJhdGlvbjwvdGV4dD48dGV4dCB4PSIxMDYwIiB5PSIyMTAiIGNsYXNzPSJkZXNjIj5WYWxpZGF0aW9uIGJsdWVwcmludDwvdGV4dD48cmVjdCB4PSIxMzAwIiB5PSIxNTgiIHdpZHRoPSIyMjYiIGhlaWdodD0iODQiIHJ4PSIxMSIgZmlsbD0iI2YyZWNmZiIgc3Ryb2tlPSIjYTU4YmQyIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjE1MTAiIGN5PSIxNzMiIHI9IjEzIiBmaWxsPSIjNjg0OWI1Ii8+PHRleHQgeD0iMTUxMCIgeT0iMTc4IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj42PC90ZXh0Pjx0ZXh0IHg9IjEzMTIiIHk9IjE5MCIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjE0Ij5QbGFuIHZlcmlmaWNhdGlvbjwvdGV4dD48dGV4dCB4PSIxMzEyIiB5PSIyMTAiIGNsYXNzPSJkZXNjIj5TZWxmLWNoZWNrIGFnYWluc3QgZ3VhcmRyYWlsczwvdGV4dD48cmVjdCB4PSIxNTUyIiB5PSIxNTgiIHdpZHRoPSIyMjYiIGhlaWdodD0iODQiIHJ4PSIxMSIgZmlsbD0iI2YyZWNmZiIgc3Ryb2tlPSIjYTU4YmQyIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjE3NjIiIGN5PSIxNzMiIHI9IjEzIiBmaWxsPSIjNjg0OWI1Ii8+PHRleHQgeD0iMTc2MiIgeT0iMTc4IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj43PC90ZXh0Pjx0ZXh0IHg9IjE1NjQiIHk9IjE5MCIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjE0Ij5KSVJBIHVwZGF0ZTwvdGV4dD48dGV4dCB4PSIxNTY0IiB5PSIyMTAiIGNsYXNzPSJkZXNjIj5Qb3N0cyBzdHJ1Y3R1cmVkIGNoZWNrbGlzdDwvdGV4dD48cmVjdCB4PSIxMDAiIHk9IjI1NiIgd2lkdGg9IjI5MiIgaGVpZ2h0PSI2NCIgcng9IjExIiBmaWxsPSIjZmZlY2UwIiBzdHJva2U9IiNkMzliN2QiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iMzc2IiBjeT0iMjcxIiByPSIxMyIgZmlsbD0iI2FhNGIyNiIvPjx0ZXh0IHg9IjM3NiIgeT0iMjc2IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj44PC90ZXh0Pjx0ZXh0IHg9IjExMiIgeT0iMjg4IiBjbGFzcz0idGl0bGUiIGZvbnQtc2l6ZT0iMTQiPkdpdOKAk0pJUkEgbGlua2FnZTwvdGV4dD48dGV4dCB4PSIxMTIiIHk9IjMwOCIgY2xhc3M9ImRlc2MiPkNvbW1pdOKAk1BS4oCTdGlja2V0PC90ZXh0PjxyZWN0IHg9IjUzMCIgeT0iMjU2IiB3aWR0aD0iMjkyIiBoZWlnaHQ9IjY0IiByeD0iMTEiIGZpbGw9IiNmZmVjZTAiIHN0cm9rZT0iI2QzOWI3ZCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48Y2lyY2xlIGN4PSI4MDYiIGN5PSIyNzEiIHI9IjEzIiBmaWxsPSIjYWE0YjI2Ii8+PHRleHQgeD0iODA2IiB5PSIyNzYiIGNsYXNzPSJudW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiPjk8L3RleHQ+PHRleHQgeD0iNTQyIiB5PSIyODgiIGNsYXNzPSJ0aXRsZSIgZm9udC1zaXplPSIxNCI+Q29kZSB2ZXJpZmljYXRpb24gbG9vcDwvdGV4dD48dGV4dCB4PSI1NDIiIHk9IjMwOCIgY2xhc3M9ImRlc2MiPlZhbGlkYXRlcyBQUiBhZ2FpbnN0IHBsYW48L3RleHQ+PHJlY3QgeD0iOTYwIiB5PSIyNTYiIHdpZHRoPSIyOTIiIGhlaWdodD0iNjQiIHJ4PSIxMSIgZmlsbD0iI2U1ZmFmMCIgc3Ryb2tlPSIjNzZjNmFjIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjEyMzYiIGN5PSIyNzEiIHI9IjEzIiBmaWxsPSIjMTI3ZTYyIi8+PHRleHQgeD0iMTIzNiIgeT0iMjc2IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4xMDwvdGV4dD48dGV4dCB4PSI5NzIiIHk9IjI4OCIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjE0Ij5WZWN0b3IgZnVzaW9uPC90ZXh0Pjx0ZXh0IHg9Ijk3MiIgeT0iMzA4IiBjbGFzcz0iZGVzYyI+QmluZHMgY29kZSBjb250ZXh0IHRvIGdyYXBoPC90ZXh0PjxyZWN0IHg9IjEzOTAiIHk9IjI1NiIgd2lkdGg9IjI5MiIgaGVpZ2h0PSI2NCIgcng9IjExIiBmaWxsPSIjZTVmYWYwIiBzdHJva2U9IiM3NmM2YWMiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iMTY2NiIgY3k9IjI3MSIgcj0iMTMiIGZpbGw9IiMxMjdlNjIiLz48dGV4dCB4PSIxNjY2IiB5PSIyNzYiIGNsYXNzPSJudW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiPjExPC90ZXh0Pjx0ZXh0IHg9IjE0MDIiIHk9IjI4OCIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjE0Ij5EZXBsb3ltZW50IHRyYWNraW5nPC90ZXh0Pjx0ZXh0IHg9IjE0MDIiIHk9IjMwOCIgY2xhc3M9ImRlc2MiPlBS4oCTcGlwZWxpbmXigJNwcm9kdWN0aW9uPC90ZXh0PjxyZWN0IHg9IjM3IiB5PSI0MjQiIHdpZHRoPSIxNjMiIGhlaWdodD0iOTEiIHJ4PSIxMSIgZmlsbD0iI2ZmZjRlMiIgc3Ryb2tlPSIjZDRiNzgzIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjE4NCIgY3k9IjQzOSIgcj0iMTMiIGZpbGw9IiM5ZjY4MjUiLz48dGV4dCB4PSIxODQiIHk9IjQ0NCIgY2xhc3M9Im51bSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+MTI8L3RleHQ+PHRleHQgeD0iNDkiIHk9IjQ1NiIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjEyIj5Mb2cgaW5nZXN0aW9uPC90ZXh0Pjx0ZXh0IHg9IjQ5IiB5PSI0NzYiIGNsYXNzPSJkZXNjIj5TdHJlYW1zIHRlbGVtZXRyeTwvdGV4dD48cmVjdCB4PSIyMTMiIHk9IjQyNCIgd2lkdGg9IjE2MyIgaGVpZ2h0PSI5MSIgcng9IjExIiBmaWxsPSIjZmZmNGUyIiBzdHJva2U9IiNkNGI3ODMiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iMzYwIiBjeT0iNDM5IiByPSIxMyIgZmlsbD0iIzlmNjgyNSIvPjx0ZXh0IHg9IjM2MCIgeT0iNDQ0IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4xMzwvdGV4dD48dGV4dCB4PSIyMjUiIHk9IjQ1NiIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjEyIj5BUE0gdHJhY2UgaW5nZXN0aW9uPC90ZXh0Pjx0ZXh0IHg9IjIyNSIgeT0iNDc2IiBjbGFzcz0iZGVzYyI+Q2FwdHVyZXMgZGVlcDwvdGV4dD48dGV4dCB4PSIyMjUiIHk9IjQ5MSIgY2xhc3M9ImRlc2MiPnRyYWNlczwvdGV4dD48cmVjdCB4PSIzODkiIHk9IjQyNCIgd2lkdGg9IjE2MyIgaGVpZ2h0PSI5MSIgcng9IjExIiBmaWxsPSIjZmZmNGUyIiBzdHJva2U9IiNkNGI3ODMiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iNTM2IiBjeT0iNDM5IiByPSIxMyIgZmlsbD0iIzlmNjgyNSIvPjx0ZXh0IHg9IjUzNiIgeT0iNDQ0IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4xNDwvdGV4dD48dGV4dCB4PSI0MDEiIHk9IjQ1NiIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjEyIj5Db3JyZWxhdGVkIGFub21hbHk8L3RleHQ+PHRleHQgeD0iNDAxIiB5PSI0NzYiIGNsYXNzPSJkZXNjIj5UcmFjZSArIGxvZzwvdGV4dD48dGV4dCB4PSI0MDEiIHk9IjQ5MSIgY2xhc3M9ImRlc2MiPnN5bXB0b21zPC90ZXh0PjxyZWN0IHg9IjU2NSIgeT0iNDI0IiB3aWR0aD0iMTYzIiBoZWlnaHQ9IjkxIiByeD0iMTEiIGZpbGw9IiNmZmY0ZTIiIHN0cm9rZT0iI2Q0Yjc4MyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48Y2lyY2xlIGN4PSI3MTIiIGN5PSI0MzkiIHI9IjEzIiBmaWxsPSIjOWY2ODI1Ii8+PHRleHQgeD0iNzEyIiB5PSI0NDQiIGNsYXNzPSJudW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiPjE1PC90ZXh0Pjx0ZXh0IHg9IjU3NyIgeT0iNDU2IiBjbGFzcz0idGl0bGUiIGZvbnQtc2l6ZT0iMTIiPlVuaWZpZWQgYWxlcnQ8L3RleHQ+PHRleHQgeD0iNTc3IiB5PSI0NzYiIGNsYXNzPSJkZXNjIj5MaW5rcyB0cmFjZSB0bzwvdGV4dD48dGV4dCB4PSI1NzciIHk9IjQ5MSIgY2xhc3M9ImRlc2MiPmZ1bmN0aW9uPC90ZXh0PjxyZWN0IHg9Ijc0MSIgeT0iNDI0IiB3aWR0aD0iMTYzIiBoZWlnaHQ9IjkxIiByeD0iMTEiIGZpbGw9IiNmZGVlZmEiIHN0cm9rZT0iI2NjOWZiZCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48Y2lyY2xlIGN4PSI4ODgiIGN5PSI0MzkiIHI9IjEzIiBmaWxsPSIjOWMzOTdjIi8+PHRleHQgeD0iODg4IiB5PSI0NDQiIGNsYXNzPSJudW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiPjE2PC90ZXh0Pjx0ZXh0IHg9Ijc1MyIgeT0iNDU2IiBjbGFzcz0idGl0bGUiIGZvbnQtc2l6ZT0iMTIiPkdyYXBoIHRyYXZlcnNhbCB0cmlhZ2U8L3RleHQ+PHRleHQgeD0iNzUzIiB5PSI0NzYiIGNsYXNzPSJkZXNjIj5GaW5kcyByZWxhdGVkIG5vZGVzPC90ZXh0PjxyZWN0IHg9IjkxNyIgeT0iNDI0IiB3aWR0aD0iMTYzIiBoZWlnaHQ9IjkxIiByeD0iMTEiIGZpbGw9IiNmZGVlZmEiIHN0cm9rZT0iI2NjOWZiZCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48Y2lyY2xlIGN4PSIxMDY0IiBjeT0iNDM5IiByPSIxMyIgZmlsbD0iIzljMzk3YyIvPjx0ZXh0IHg9IjEwNjQiIHk9IjQ0NCIgY2xhc3M9Im51bSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+MTc8L3RleHQ+PHRleHQgeD0iOTI5IiB5PSI0NTYiIGNsYXNzPSJ0aXRsZSIgZm9udC1zaXplPSIxMiI+SHlicmlkIHJhbmtpbmcgc2VhcmNoPC90ZXh0Pjx0ZXh0IHg9IjkyOSIgeT0iNDc2IiBjbGFzcz0iZGVzYyI+VmVjdG9yICsgdGltZSArPC90ZXh0Pjx0ZXh0IHg9IjkyOSIgeT0iNDkxIiBjbGFzcz0iZGVzYyI+aGlzdG9yeTwvdGV4dD48cmVjdCB4PSIxMDkzIiB5PSI0MjQiIHdpZHRoPSIxNjMiIGhlaWdodD0iOTEiIHJ4PSIxMSIgZmlsbD0iI2ZkZWVmYSIgc3Ryb2tlPSIjY2M5ZmJkIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjEyNDAiIGN5PSI0MzkiIHI9IjEzIiBmaWxsPSIjOWMzOTdjIi8+PHRleHQgeD0iMTI0MCIgeT0iNDQ0IiBjbGFzcz0ibnVtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4xODwvdGV4dD48dGV4dCB4PSIxMTA1IiB5PSI0NTYiIGNsYXNzPSJ0aXRsZSIgZm9udC1zaXplPSIxMiI+Um9vdCBjYXVzZSByYW5raW5nPC90ZXh0Pjx0ZXh0IHg9IjExMDUiIHk9IjQ3NiIgY2xhc3M9ImRlc2MiPlRvcCAzIGNhbmRpZGF0ZXM8L3RleHQ+PHJlY3QgeD0iMTI2OSIgeT0iNDI0IiB3aWR0aD0iMTYzIiBoZWlnaHQ9IjkxIiByeD0iMTEiIGZpbGw9IiNmZGVlZmEiIHN0cm9rZT0iI2NjOWZiZCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48Y2lyY2xlIGN4PSIxNDE2IiBjeT0iNDM5IiByPSIxMyIgZmlsbD0iIzljMzk3YyIvPjx0ZXh0IHg9IjE0MTYiIHk9IjQ0NCIgY2xhc3M9Im51bSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+MTk8L3RleHQ+PHRleHQgeD0iMTI4MSIgeT0iNDU2IiBjbGFzcz0idGl0bGUiIGZvbnQtc2l6ZT0iMTIiPkF1dG9tYXRlZCB0cmlhZ2UgYWxlcnQ8L3RleHQ+PHRleHQgeD0iMTI4MSIgeT0iNDc2IiBjbGFzcz0iZGVzYyI+U2VuZHMgcmFua2VkIGFsZXJ0PC90ZXh0PjxyZWN0IHg9IjE0NDUiIHk9IjQyNCIgd2lkdGg9IjE2MyIgaGVpZ2h0PSI5MSIgcng9IjExIiBmaWxsPSIjZTdmOGYyIiBzdHJva2U9IiM4OWMyYWUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iMTU5MiIgY3k9IjQzOSIgcj0iMTMiIGZpbGw9IiMxNDdiNjUiLz48dGV4dCB4PSIxNTkyIiB5PSI0NDQiIGNsYXNzPSJudW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiPjIwPC90ZXh0Pjx0ZXh0IHg9IjE0NTciIHk9IjQ1NiIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjEyIj5HcmFwaCB3ZWlnaHQgY2FsaWJyYXRpb248L3RleHQ+PHRleHQgeD0iMTQ1NyIgeT0iNDc2IiBjbGFzcz0iZGVzYyI+RW5naW5lZXJzIHZhbGlkYXRlPC90ZXh0PjxyZWN0IHg9IjE2MjEiIHk9IjQyNCIgd2lkdGg9IjE2MyIgaGVpZ2h0PSI5MSIgcng9IjExIiBmaWxsPSIjZTdmOGYyIiBzdHJva2U9IiM4OWMyYWUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iMTc2OCIgY3k9IjQzOSIgcj0iMTMiIGZpbGw9IiMxNDdiNjUiLz48dGV4dCB4PSIxNzY4IiB5PSI0NDQiIGNsYXNzPSJudW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiPjIxPC90ZXh0Pjx0ZXh0IHg9IjE2MzMiIHk9IjQ1NiIgY2xhc3M9InRpdGxlIiBmb250LXNpemU9IjEyIj5Db250ZXh0IGZseXdoZWVsPC90ZXh0Pjx0ZXh0IHg9IjE2MzMiIHk9IjQ3NiIgY2xhc3M9ImRlc2MiPlBhc3QgbGVhcm5pbmdzIOKGkjwvdGV4dD48dGV4dCB4PSIxNjMzIiB5PSI0OTEiIGNsYXNzPSJkZXNjIj5tZW1vcnk8L3RleHQ+PHBhdGggZD0iTTI2OSwyMDAuMCBMMjg2LDIwMC4wIiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yODIsMTk1LjAgTDI4OSwyMDAuMCBMMjgyLDIwNS4wIiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik01MjEsMjAwLjAgTDUzOCwyMDAuMCIgc3Ryb2tlPSIjN2E5Y2JkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNNTM0LDE5NS4wIEw1NDEsMjAwLjAgTDUzNCwyMDUuMCIgc3Ryb2tlPSIjN2E5Y2JkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNNzczLDIwMC4wIEw3OTAsMjAwLjAiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTc4NiwxOTUuMCBMNzkzLDIwMC4wIEw3ODYsMjA1LjAiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTEwMjUsMjAwLjAgTDEwNDIsMjAwLjAiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTEwMzgsMTk1LjAgTDEwNDUsMjAwLjAgTDEwMzgsMjA1LjAiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTEyNzcsMjAwLjAgTDEyOTQsMjAwLjAiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTEyOTAsMTk1LjAgTDEyOTcsMjAwLjAgTDEyOTAsMjA1LjAiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTE1MjksMjAwLjAgTDE1NDYsMjAwLjAiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTE1NDIsMTk1LjAgTDE1NDksMjAwLjAgTDE1NDIsMjA1LjAiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTM5NSwyODguMCBMNTI0LDI4OC4wIiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik01MjAsMjgzLjAgTDUyNywyODguMCBMNTIwLDI5My4wIiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik04MjUsMjg4LjAgTDk1NCwyODguMCIgc3Ryb2tlPSIjN2E5Y2JkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNOTUwLDI4My4wIEw5NTcsMjg4LjAgTDk1MCwyOTMuMCIgc3Ryb2tlPSIjN2E5Y2JkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMTI1NSwyODguMCBMMTM4NCwyODguMCIgc3Ryb2tlPSIjN2E5Y2JkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMTM4MCwyODMuMCBMMTM4NywyODguMCBMMTM4MCwyOTMuMCIgc3Ryb2tlPSIjN2E5Y2JkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMjAzLDQ2OS41IEwyMDcsNDY5LjUiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTIwMyw0NjQuNSBMMjEwLDQ2OS41IEwyMDMsNDc0LjUiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTM3OSw0NjkuNSBMMzgzLDQ2OS41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0zNzksNDY0LjUgTDM4Niw0NjkuNSBMMzc5LDQ3NC41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik01NTUsNDY5LjUgTDU1OSw0NjkuNSIgc3Ryb2tlPSIjN2E5Y2JkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNNTU1LDQ2NC41IEw1NjIsNDY5LjUgTDU1NSw0NzQuNSIgc3Ryb2tlPSIjN2E5Y2JkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNNzMxLDQ2OS41IEw3MzUsNDY5LjUiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTczMSw0NjQuNSBMNzM4LDQ2OS41IEw3MzEsNDc0LjUiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTkwNyw0NjkuNSBMOTExLDQ2OS41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik05MDcsNDY0LjUgTDkxNCw0NjkuNSBMOTA3LDQ3NC41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMDgzLDQ2OS41IEwxMDg3LDQ2OS41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMDgzLDQ2NC41IEwxMDkwLDQ2OS41IEwxMDgzLDQ3NC41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMjU5LDQ2OS41IEwxMjYzLDQ2OS41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMjU5LDQ2NC41IEwxMjY2LDQ2OS41IEwxMjU5LDQ3NC41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xNDM1LDQ2OS41IEwxNDM5LDQ2OS41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xNDM1LDQ2NC41IEwxNDQyLDQ2OS41IEwxNDM1LDQ3NC41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xNjExLDQ2OS41IEwxNjE1LDQ2OS41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xNjExLDQ2NC41IEwxNjE4LDQ2OS41IEwxNjExLDQ3NC41IiBzdHJva2U9IiM3YTljYmQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0gMTcxOCAyNDIgViAyNTEgSCAyNDYgViAyNTQiIHN0cm9rZT0iIzdhOWNiZCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIiBzdHJva2UtZGFzaGFycmF5PSI3IDQiLz48cGF0aCBkPSJNIDE2ODIgMzIwIFYgMzM3IEggMTE4IFYgNDIxIiBzdHJva2U9IiNiMzk1NmEiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWRhc2hhcnJheT0iNyA0Ii8+PHBhdGggZD0iTSAxNzQwIDUxNCBWIDUzMSBIIDg4MCBWIDc5IiBzdHJva2U9IiM2YmE5YTAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtZGFzaGFycmF5PSI2IDUiIGZpbGw9Im5vbmUiIG9wYWNpdHk9Ii44Ii8+PC9zdmc+" alt="BlastTrace end-to-end workflow flowchart with 21 steps across Engine A Software Factory and Engine B Observability Engine">
+      <figcaption class="how-modal-caption">Workflow chart used in the presentation: Jira intake → predictive planning → verified development → deployment → telemetry monitoring → correlated triage → institutional learning.</figcaption>
+    </figure>
+  </div>
+</div>
 
 <script>
+const openHowItWorksButton = document.getElementById("openHowItWorks");
+const howItWorksModal = document.getElementById("howItWorksModal");
+const closeHowItWorksButton = document.getElementById("closeHowItWorks");
+
+function setHowItWorksModal(open) {
+  if (!howItWorksModal) return;
+  howItWorksModal.classList.toggle("show", open);
+  howItWorksModal.setAttribute("aria-hidden", open ? "false" : "true");
+  document.body.style.overflow = open ? "hidden" : "";
+}
+
+if (openHowItWorksButton && howItWorksModal) {
+  openHowItWorksButton.addEventListener("click", () => setHowItWorksModal(true));
+  closeHowItWorksButton?.addEventListener("click", () => setHowItWorksModal(false));
+  howItWorksModal.addEventListener("click", (event) => {
+    if (event.target === howItWorksModal) setHowItWorksModal(false);
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && howItWorksModal.classList.contains("show")) {
+      setHowItWorksModal(false);
+    }
+  });
+}
+
 /*
   OVERVIEW — PRESENTATION DEMO
 
@@ -785,7 +846,7 @@ h1 em{color:#2466ee;font-weight:400}
 .inv-meta-strip{display:flex;gap:12px;flex-wrap:wrap;padding:8px 18px 9px;border-bottom:1px solid rgba(31,76,158,.06);background:rgba(248,251,255,.72);font-size:9px;line-height:1.45;color:#71809a}.inv-meta-strip b{color:#2a4775;font-weight:760;margin-right:3px}.inv-meta-strip .desc{flex-basis:100%;color:#60718f}
 .live{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(36,157,98,.18);background:#f6fffa;border-radius:8px;padding:6px 10px;font-size:9px;color:#3f8061;font-weight:700}
 .live i{width:7px;height:7px;background:#27b36d;border-radius:50%}
-.lineage{padding:18px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:stretch}
+.lineage{padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:stretch}
 .node-card{position:relative;min-width:0;border:1px solid rgba(37,83,169,.11);border-radius:11px;padding:13px 13px 12px;background:rgba(255,255,255,.72)}
 .node-card:not(:last-child):after{content:"";position:absolute;top:31px;right:-13px;width:13px;border-top:2px solid var(--blue)}
 .node-card:not(:last-child):before{content:"";position:absolute;top:28px;right:-16px;width:6px;height:6px;border-radius:50%;background:white;border:2px solid var(--blue);z-index:3}
@@ -794,7 +855,7 @@ h1 em{color:#2466ee;font-weight:400}
 .node-state{display:flex;align-items:center;gap:6px;padding:9px 0 8px;border-bottom:1px solid rgba(43,81,157,.08);font-size:9.5px;color:#526988}
 .ok{width:13px;height:13px;border-radius:50%;display:grid;place-items:center;border:1px solid #35ad72;color:#35ad72;font-size:8px}
 .node-id{font-size:11px;color:var(--blue);font-weight:700;margin-top:10px}
-.node-copy{font-size:9.5px;line-height:1.45;color:#4c5f82;margin-top:8px}
+.node-copy{font-size:9.5px;line-height:1.45;color:#4c5f82;margin-top:8px;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
 .node-link{font-size:9px;color:var(--blue);margin-top:12px}
 
 .files{margin:0 18px 17px;border:1px solid rgba(37,83,169,.10);border-radius:11px;overflow:hidden;background:rgba(255,255,255,.66)}
@@ -893,7 +954,7 @@ h1{font-size:clamp(50px,4.35vw,70px);letter-spacing:-.052em}.lead{font-size:15px
 .panel-head{height:62px;padding:0 20px;font-size:15px;letter-spacing:-.015em}.jira-toggle{font-size:11px;min-height:32px;padding:0 12px}.recent-note{font-size:11px;padding:11px 16px 2px}
 .ticket-list{padding:14px 12px 10px}.ticket{padding:15px 16px;border-radius:12px;margin-bottom:12px}.ticket-id{font-size:12.5px}.ticket-title{font-size:14px;line-height:1.5;margin:9px 0}.meta{font-size:11px;gap:12px}.tag,.status{font-size:10px}.pager{font-size:11px;padding:12px 16px}
 .investigation-head{height:62px;padding:0 20px}.inv-title{font-size:14px}.live{font-size:10.5px;padding:7px 11px}
-.lineage{padding:20px;gap:14px}.node-card{padding:15px;border-radius:12px}.node-title{font-size:12.5px}.node-icon{width:26px;height:26px;font-size:13px}.node-state{font-size:10.5px}.node-id{font-size:12px}.node-copy{font-size:11px;line-height:1.55}.node-link{font-size:10.5px}
+.lineage{padding:20px;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.node-card{padding:15px;border-radius:12px;min-height:180px}.node-title{font-size:12.5px}.node-icon{width:26px;height:26px;font-size:13px}.node-state{font-size:10.5px}.node-id{font-size:12px;overflow-wrap:anywhere}.node-copy{font-size:11px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}.node-link{font-size:10.5px}
 .files{margin:0 20px 20px;border-radius:12px}.files-head{height:48px;font-size:12px;padding:0 16px}th{font-size:10.5px;padding:11px 15px}td{font-size:11.5px;padding:12px 15px}.small{font-size:10px}.impact{font-size:10px}
 .right-panel{padding:20px}.right-title{font-size:14px;margin-bottom:15px}.score{font-size:32px}.score-label,.legend,.test-copy,.full-link{font-size:11px}.test{padding:13px 0}.sev{font-size:9.5px}
 .timeline{max-width:none;gap:18px;margin-top:20px}.step{min-height:126px;padding:16px 16px 16px 72px;border-radius:13px}.step-icon{width:40px;height:40px}.step-title{font-size:12.5px}.step-copy{font-size:10.5px;line-height:1.55}.step-time{font-size:10px}
@@ -911,7 +972,7 @@ html,body{font-family:"Segoe UI Variable Text","Aptos","Segoe UI",Inter,ui-sans-
 .nav-center{font-size:13.5px}.brand{font-weight:760}.back{font-size:13.5px}.lead{font-size:16px;line-height:1.65;color:#5f7192}
 .panel-head{font-size:15.5px;font-weight:760}.jira-toggle{font-size:11.5px;font-weight:720}.recent-note{font-size:11.5px;line-height:1.5}.tab{font-size:12px}
 .ticket{padding:16px 17px}.ticket-id{font-size:12.5px}.ticket-title{font-size:15px;line-height:1.48;font-weight:680}.meta{font-size:11.5px;line-height:1.5}.tag,.status{font-size:10.5px}.pager{font-size:11.5px}
-.inv-title{font-size:14.5px;line-height:1.45}.live{font-size:11px}.node-title{font-size:13px}.node-state{font-size:11px}.node-id{font-size:12.5px}.node-copy{font-size:11.5px;line-height:1.58}.node-link{font-size:11px}
+.inv-title{font-size:14.5px;line-height:1.45}.live{font-size:11px}.node-title{font-size:13px}.node-state{font-size:11px}.node-id{font-size:12.5px;overflow-wrap:anywhere}.node-copy{font-size:11.5px;line-height:1.58;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}.node-link{font-size:11px}
 .files-head{font-size:13px}.files th{font-size:11px}.files td{font-size:12px;line-height:1.5}.file-name{font-size:12.5px}.small{font-size:10.5px}.impact{font-size:10.5px}
 .right-title{font-size:14.5px}.score-label,.legend,.test-copy,.full-link{font-size:11.5px;line-height:1.52}.test-copy{font-size:11.8px}.sev{font-size:10px}
 .step-title{font-size:13px}.step-copy{font-size:11.2px;line-height:1.55}.step-time{font-size:10.5px}.api-state{font-size:13px;line-height:1.62}.file-path{font-size:11.5px}
@@ -959,6 +1020,16 @@ html,body{font-family:"Segoe UI Variable Text","Aptos","Segoe UI",Inter,ui-sans-
 
   &lt;h1&gt;Software &lt;em&gt;Factory&lt;/em&gt;&lt;/h1&gt;
   &lt;p class="lead"&gt;&lt;strong style="color:#1761f6;font-weight:700"&gt;Change Intelligence&lt;/strong&gt; &amp;nbsp;·&amp;nbsp; Jira tickets, code changes, PRs, and deployments unified in one investigation graph.&lt;/p&gt;
+
+  &lt;style&gt;
+  .demo-choice-active {background:#1761f6!important;color:#fff!important;border-color:#1761f6!important;box-shadow:0 7px 20px rgba(23,97,246,.17)!important}
+  .demo-choice-inactive {background:#fff!important;color:#1761f6!important;border-color:rgba(23,97,246,.25)!important;box-shadow:none!important}
+&lt;/style&gt;
+  &lt;div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px"&gt;
+    &lt;button type="button" id="demoJiraButton" style="background:#1761f6;color:#fff;border:1px solid #1761f6;border-radius:9px;padding:10px 15px;font-size:12px;font-weight:700;cursor:pointer"&gt;Generate Jira Ticket 1 — Category Filters&lt;/button&gt;
+    &lt;button type="button" id="demoJiraSecondButton" style="background:white;color:#1761f6;border:1px solid rgba(23,97,246,.25);border-radius:9px;padding:10px 15px;font-size:12px;font-weight:700;cursor:pointer"&gt;Generate Jira Ticket 2 — Product Selection&lt;/button&gt;
+    &lt;span id="demoJiraStatus" role="status" aria-live="polite" style="font-size:11px;color:#60718f"&gt;Creates the Jira ticket demo, generates the AI blueprint, and runs the related incident investigation.&lt;/span&gt;
+  &lt;/div&gt;
 
   &lt;section class="workspace"&gt;
     &lt;aside class="panel left-panel"&gt;
@@ -1493,6 +1564,149 @@ $("viewAllJira").addEventListener("click", () =&gt; {
   renderTicketPage();
 });
 
+/* Scenario runner: existing Jira ticket IDs preserve their real Git lineage.
+   A Jira webhook generates the blueprint; a separate simulated alert
+   starts the existing RCA pipeline. No root-cause answer is hardcoded. */
+const demoJiraButton = $("demoJiraButton");
+const demoJiraSecondButton = $("demoJiraSecondButton");
+const demoJiraButtons = [demoJiraButton, demoJiraSecondButton].filter(Boolean);
+const demoJiraStatus = $("demoJiraStatus");
+const demoScenarios = {
+  category: {
+    ticketId: "SFDC-2101",
+    title: "Harden product category filter defaults",
+    description: "Improve product filtering behavior in E-Bikes Product Explorer when category filters are missing. Verify that clearing all category selections does not cause existing products to disappear.",
+    alertTitle: "Product catalog becomes empty when category filters are cleared",
+    alertMessage: "Product Explorer displays zero products after users clear every category checkbox, although products exist. Expected: all products remain visible without a category restriction."
+  },
+  selection: {
+    ticketId: "SFDC-2102",
+    title: "Refactor product selection message payload",
+    description: "Update the product selection event payload used by Product Explorer when a user clicks a product tile. Verify the details panel updates to the clicked product and handles missing event data safely.",
+    alertTitle: "Product details fail to update after selecting a product",
+    alertMessage: "In Product Explorer, selecting a product tile sometimes does not open or update the product-details panel. Expected: display details for the clicked product."
+  }
+};
+
+async function runDemoJiraTicket(kind) {
+  const scenario = demoScenarios[kind];
+  if (!scenario) return;
+  const ticketId = scenario.ticketId;
+  demoJiraButtons.forEach(button =&gt; { button.disabled = true; button.style.opacity = ".65"; });
+  let jiraAccepted = false;
+  let alertAccepted = false;
+  let incidentId = "";
+
+  try {
+    // Read existing blueprint first. Reused SFDC ticket IDs can already have one.
+    let previousBlueprint = "";
+    try {
+      const oldRes = await fetch(`${API_BASE}/api/software-factory/${encodeURIComponent(ticketId)}`);
+      if (oldRes.ok) previousBlueprint = String((await oldRes.json()).blueprint || "");
+    } catch (_) { /* The ticket may not be present until this run. */ }
+
+    demoJiraStatus.textContent = `${ticketId}: requesting a new AI blueprint…`;
+    const jiraRes = await fetch(`${API_BASE}/webhook/jira`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ticket_id: ticketId,
+        title: scenario.title,
+        description: scenario.description,
+        jira_owner: "Engineering Team"
+      })
+    });
+    if (!jiraRes.ok) throw new Error(`Jira webhook returned HTTP ${jiraRes.status}`);
+    const jiraBody = await jiraRes.json();
+    if (jiraBody.status !== "Accepted") throw new Error("Jira webhook did not accept the ticket.");
+    jiraAccepted = true;
+    state.showAllTickets = true;
+    state.selectedId = ticketId;
+    await loadSoftwareFactory(true);
+
+    // This is a separate simulated incident: Jira creation alone never runs RCA.
+    incidentId = `BT-DEMO-${kind.toUpperCase()}-${Date.now()}-${Math.floor(Math.random()*10000)}`;
+    demoJiraStatus.textContent = `${ticketId}: blueprint processing; sending matching incident to RCA…`;
+    const alertRes = await fetch(`${API_BASE}/webhook/alert`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        alert_id: incidentId,
+        status: "Triggered",
+        title: scenario.alertTitle,
+        message: scenario.alertMessage,
+        severity: "critical",
+        tags: ["service:product_explorer", "env:demo"]
+      })
+    });
+    if (!alertRes.ok) {
+      let details = "";
+      try { const e = await alertRes.json(); details = JSON.stringify(e.detail || e); } catch (_) {}
+      throw new Error(`Alert webhook returned HTTP ${alertRes.status}${details ? ": " + details : ""}`);
+    }
+    const alertBody = await alertRes.json();
+    if (alertBody.status !== "Accepted") throw new Error("Alert webhook did not accept the incident.");
+    incidentId = String(alertBody.alert_id || incidentId);
+    alertAccepted = true;
+
+    try { localStorage.setItem("blasttrace.activeAlertId", incidentId); } catch (_) {}
+    try {
+      parent.dispatchEvent(new parent.CustomEvent("blasttrace:demo-incident-selected", {
+        detail: { alertId: incidentId }
+      }));
+    } catch (_) {}
+
+    const deadline = Date.now() + 180000;
+    let gotRca = false;
+    let gotFreshBlueprint = false;
+    while (Date.now() &lt; deadline) {
+      const [ticketResponse, incidentResponse] = await Promise.all([
+        fetch(`${API_BASE}/api/software-factory/${encodeURIComponent(ticketId)}`),
+        fetch(`${API_BASE}/api/incidents/${encodeURIComponent(incidentId)}`)
+      ]);
+
+      if (ticketResponse.ok) {
+        const ticket = await ticketResponse.json();
+        // Existing nodes can retain an older blueprint while background work runs.
+        gotFreshBlueprint = Boolean(ticket.blueprint) &amp;&amp;
+          (!previousBlueprint || String(ticket.blueprint) !== previousBlueprint);
+        if (gotFreshBlueprint) await loadTicketDetail(ticketId, true);
+      }
+      if (incidentResponse.ok) {
+        const incident = await incidentResponse.json();
+        gotRca = Boolean(incident.triage);
+        if (gotRca) {
+          const candidates = Array.isArray(incident.triage.candidates)
+            ? incident.triage.candidates.length : 0;
+          const rcaNote = candidates
+            ? `${candidates} RCA candidate(s) stored`
+            : "RCA finished without connected candidates";
+          demoJiraStatus.textContent = `${ticketId}: ${rcaNote}. Open Investigate or Analytics. ${gotFreshBlueprint ? "New blueprint ready." : "Blueprint updating."}`;
+          // The normal Software Factory refresh keeps checking for a new blueprint.
+          return;
+        }
+      }
+      demoJiraStatus.textContent = `${ticketId}: ${gotFreshBlueprint ? "new blueprint ready" : "AI blueprint processing"}; RCA processing for ${incidentId}…`;
+      await new Promise(resolve =&gt; setTimeout(resolve, 3000));
+    }
+    demoJiraStatus.textContent = `${ticketId}: both webhooks accepted, but RCA has not finished after 3 minutes. Check FastAPI logs.`;
+  } catch (error) {
+    demoJiraStatus.textContent = jiraAccepted
+      ? `${ticketId}: Jira request accepted${alertAccepted ? " and incident submitted" : ""}, but the scenario could not complete: ${error.message}`
+      : `${ticketId}: ${error.message}`;
+  } finally {
+    demoJiraButtons.forEach(button =&gt; { button.disabled = false; button.style.opacity = "1"; });
+  }
+}
+function setSelectedJiraDemo(kind) {
+  [[demoJiraButton, "category"], [demoJiraSecondButton, "selection"]].forEach(([btn,key]) =&gt; {
+    if (!btn) return;
+    btn.classList.toggle("demo-choice-active", kind === key);
+    btn.classList.toggle("demo-choice-inactive", kind !== key);
+    btn.setAttribute("aria-pressed", String(kind === key));
+  });
+}
+setSelectedJiraDemo("category");
+if (demoJiraButton) demoJiraButton.addEventListener("click", () =&gt; { setSelectedJiraDemo("category"); runDemoJiraTicket("category"); });
+if (demoJiraSecondButton) demoJiraSecondButton.addEventListener("click", () =&gt; { setSelectedJiraDemo("selection"); runDemoJiraTicket("selection"); });
 loadSoftwareFactory();
 state.refreshTimer = setInterval(() =&gt; loadSoftwareFactory(true), 4000);
 
@@ -1836,6 +2050,16 @@ html,body{font-family:"Segoe UI Variable Text","Aptos","Segoe UI",Inter,ui-sans-
     &lt;/select&gt;
   &lt;/section&gt;
 
+  &lt;style&gt;
+  .demo-choice-active {background:#1761f6!important;color:#fff!important;border-color:#1761f6!important;box-shadow:0 7px 20px rgba(23,97,246,.17)!important}
+  .demo-choice-inactive {background:#fff!important;color:#1761f6!important;border-color:rgba(23,97,246,.25)!important;box-shadow:none!important}
+&lt;/style&gt;
+  &lt;div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px"&gt;
+    &lt;button type="button" id="demoIncidentCategory" style="background:#1761f6;color:white;border:1px solid #1761f6;border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer"&gt;Investigate Incident 1 — Category Filters&lt;/button&gt;
+    &lt;button type="button" id="demoIncidentSelection" style="background:white;color:#1761f6;border:1px solid rgba(23,97,246,.25);border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer"&gt;Investigate Incident 2 — Product Selection&lt;/button&gt;
+    &lt;span id="demoIncidentStatus" role="status" aria-live="polite" style="font-size:11px;color:#60718f"&gt;Runs real RCA on a synthetic incident alert.&lt;/span&gt;
+  &lt;/div&gt;
+
   &lt;section class="dashboard"&gt;
     &lt;article class="card incident-card" id="incidentCard"&gt;
       &lt;div class="api-state"&gt;Loading active incident…&lt;/div&gt;
@@ -2118,10 +2342,12 @@ async function refreshIncidentFeed(silent=false) {
 
     if (!activeStillExists) {
       manualIncidentSelection = false;
-      activeIncidentId = incidentList[0].alert_id;
+      let savedId = null;
+      try { savedId = localStorage.getItem("blasttrace.activeAlertId"); } catch (_) {}
+      const saved = incidentList.find(x =&gt; String(x.alert_id) === String(savedId));
+      activeIncidentId = saved ? saved.alert_id : incidentList[0].alert_id;
+      if (saved) manualIncidentSelection = true;
     } else if (!manualIncidentSelection) {
-      // API is sorted newest-first using the real backend receipt timestamp.
-      // This makes a newly received Datadog incident automatically become active.
       activeIncidentId = incidentList[0].alert_id;
     }
 
@@ -2362,6 +2588,96 @@ document.querySelector(".pause").addEventListener("click", event =&gt; {
     refreshTimer = setInterval(()=&gt;refreshIncidentFeed(true),3000);
     event.currentTarget.textContent = "Ⅱ  Pause";
   }
+});
+
+/* Judge demo: post symptom-only synthetic alerts to the existing RCA webhook.
+   Real backend, graph, similarity ranking, and AI are used to investigate. */
+const demoCategoryButton = $("demoIncidentCategory");
+const demoSelectionButton = $("demoIncidentSelection");
+const demoIncidentStatus = $("demoIncidentStatus");
+async function runDemoIncident(kind) {
+  const buttons = [demoCategoryButton, demoSelectionButton];
+  const incidentId = `BT-DEMO-${kind.toUpperCase()}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  const isCategory = kind === "category";
+  buttons.forEach(button =&gt; { button.disabled = true; button.style.opacity = ".65"; });
+  demoIncidentStatus.textContent = `Sending synthetic ${isCategory ? "category-filter" : "product-selection"} alert…`;
+  try {
+    const response = await fetch(`${API_BASE}/webhook/alert`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        alert_id: incidentId,
+        status: "Triggered",
+        title: isCategory
+          ? "Product catalog becomes empty when category filters are cleared"
+          : "Product details fail to update after selecting a product",
+        message: isCategory
+          ? "Product Explorer displays zero products after users clear every category checkbox, although products exist. Expected: all products remain visible without a category restriction."
+          : "In Product Explorer, selecting a product tile sometimes does not open or update the product-details panel. Expected: display details for the clicked product.",
+        severity: "critical",
+        tags: ["service:product_explorer", "env:demo"]
+      })
+    });
+    if (!response.ok) {
+      let details = "";
+      try {
+        const errorBody = await response.json();
+        details = typeof errorBody.detail === "string"
+          ? errorBody.detail
+          : JSON.stringify(errorBody.detail || errorBody);
+      } catch (_) {}
+      throw new Error(`Alert request failed (HTTP ${response.status})${details ? ": " + details : ""}`);
+    }
+    const result = await response.json();
+    if (result.status !== "Accepted") throw new Error("Alert was not accepted by the backend.");
+
+    const acceptedId = String(result.alert_id || incidentId);
+    activeIncidentId = acceptedId;
+    manualIncidentSelection = true;
+    demoIncidentStatus.textContent = `Incident ${acceptedId} accepted (service: ${result.service || "unknown"}). Running live RCA…`;
+    // Refresh the incident selector and show this new incident while RCA is running.
+    await refreshIncidentFeed(true);
+    await loadIncident(acceptedId);
+
+    const deadline = Date.now() + 180000;
+    while (Date.now() &lt; deadline) {
+      const record = await apiGet(`/api/incidents/${encodeURIComponent(acceptedId)}`);
+      if (record.triage) {
+        await loadIncident(acceptedId);
+        const count = Array.isArray(record.triage.candidates) ? record.triage.candidates.length : 0;
+        demoIncidentStatus.textContent = count
+          ? `RCA complete for ${acceptedId}: ${count} candidate(s). Results shown below.`
+          : `Investigation completed for ${acceptedId}; no linked root-cause candidates found.`;
+        return;
+      }
+      await new Promise(resolve =&gt; setTimeout(resolve, 3000));
+    }
+    demoIncidentStatus.textContent = `${acceptedId}: no stored RCA result after 3 minutes. Check FastAPI background-task logs and FalkorDB graph links.`;
+  } catch (error) {
+    demoIncidentStatus.textContent = `Demo investigation failed: ${error.message}`;
+  } finally {
+    buttons.forEach(button =&gt; { button.disabled = false; button.style.opacity = "1"; });
+  }
+}
+if (demoCategoryButton &amp;&amp; demoSelectionButton) {
+  function setSelectedIncidentDemo(kind) {
+    [[demoCategoryButton, "category"], [demoSelectionButton, "selection"]].forEach(([btn,key]) =&gt; {
+      btn.classList.toggle("demo-choice-active", kind === key);
+      btn.classList.toggle("demo-choice-inactive", kind !== key);
+      btn.setAttribute("aria-pressed", String(kind === key));
+    });
+  }
+  setSelectedIncidentDemo("category");
+  demoCategoryButton.addEventListener("click", () =&gt; { setSelectedIncidentDemo("category"); runDemoIncident("category"); });
+  demoSelectionButton.addEventListener("click", () =&gt; { setSelectedIncidentDemo("selection"); runDemoIncident("selection"); });
+}
+
+parent.addEventListener("blasttrace:demo-incident-selected", (event) =&gt; {
+  const id = event &amp;&amp; event.detail &amp;&amp; event.detail.alertId;
+  if (!id) return;
+  activeIncidentId = String(id);
+  manualIncidentSelection = true;
+  refreshIncidentFeed(true);
 });
 
 refreshIncidentFeed();

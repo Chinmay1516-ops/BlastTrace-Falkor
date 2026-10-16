@@ -5,7 +5,7 @@ import httpx
 import json
 import subprocess
 
-REPO_PATH = os.getenv("EBIKES_REPO_PATH", r"C:\Users\Chinmay\ebikes-lwc")
+REPO_PATH = os.getenv("EBIKES_REPO_PATH", r"C:\Users\sneha\ebikes-lwc")
 GITHUB_API_URL = "https://api.github.com/repos/kumarisneha4121-ops/ebikes-lwc/pulls?state=all&per_page=1"
 LOCAL_API_URL = "http://127.0.0.1:8000"
 
