@@ -5,3 +5,4 @@ requests
 python-dotenv
 falkordb
 groq
+chromadb
