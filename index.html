@@ -302,7 +302,7 @@ window.BLASTTRACE_API_BASE = (() => {
       return `${location.protocol}//${location.hostname}:8000`;
     }
   } catch (_) {}
-  return "https://laughing-space-disco-gxwv6j7r4gfwwq6-8000.app.github.dev";
+  return "http://127.0.0.1:8000";
 })();
 
 (() => {
@@ -1105,8 +1105,8 @@ html,body{font-family:"Segoe UI Variable Text","Aptos","Segoe UI",Inter,ui-sans-
   blueprints, verification results, scores, owners, or timestamps.
 */
 const API_BASE = (() =&gt; {
-  try { return parent.BLASTTRACE_API_BASE || "https://laughing-space-disco-gxwv6j7r4gfwwq6-8000.app.github.dev"; }
-  catch (_) { return "https://laughing-space-disco-gxwv6j7r4gfwwq6-8000.app.github.dev"; }
+  try { return parent.BLASTTRACE_API_BASE || "http://127.0.0.1:8000"; }
+  catch (_) { return "http://127.0.0.1:8000"; }
 })();
 
 const state = {
@@ -2134,8 +2134,8 @@ html,body{font-family:"Segoe UI Variable Text","Aptos","Segoe UI",Inter,ui-sans-
   No operational incident values are hardcoded in this page.
 */
 const API_BASE = (() =&gt; {
-  try { return parent.BLASTTRACE_API_BASE || "https://laughing-space-disco-gxwv6j7r4gfwwq6-8000.app.github.dev"; }
-  catch (_) { return "https://laughing-space-disco-gxwv6j7r4gfwwq6-8000.app.github.dev"; }
+  try { return parent.BLASTTRACE_API_BASE || "http://127.0.0.1:8000"; }
+  catch (_) { return "http://127.0.0.1:8000"; }
 })();
 
 let activeIncidentId = null;
@@ -3514,8 +3514,8 @@ html,body{font-family:"Segoe UI Variable Text","Aptos","Segoe UI",Inter,ui-sans-
   No separate /api/analytics endpoint is required.
 */
 const API_BASE = (() =&gt; {
-  try { return parent.BLASTTRACE_API_BASE || "https://laughing-space-disco-gxwv6j7r4gfwwq6-8000.app.github.dev"; }
-  catch (_) { return "https://laughing-space-disco-gxwv6j7r4gfwwq6-8000.app.github.dev"; }
+  try { return parent.BLASTTRACE_API_BASE || "http://127.0.0.1:8000"; }
+  catch (_) { return "http://127.0.0.1:8000"; }
 })();
 
 let analyticsRefreshTimer = null;
