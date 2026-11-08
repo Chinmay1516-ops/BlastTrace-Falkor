@@ -694,12 +694,14 @@ async def ingest_apm_trace(payload: APMPayload, background_tasks: BackgroundTask
 
 
 @app.get("/triage", tags=["2. Observability Engine (Reactive)"])
-async def get_all_triage():
+async def get_all_triage(request: Request):
+    require_internal_read(request)
     return list_triage()
 
 
 @app.get("/triage/{alert_id}", tags=["2. Observability Engine (Reactive)"])
-async def get_single_triage(alert_id: str):
+async def get_single_triage(alert_id: str, request: Request):
+    require_internal_read(request)
     record = get_triage(alert_id)
     if not record:
         raise HTTPException(status_code=404, detail="Alert not found")
@@ -707,7 +709,8 @@ async def get_single_triage(alert_id: str):
 
 
 @app.post("/triage/{alert_id}/feedback", tags=["2. Observability Engine (Reactive)"])
-async def submit_feedback(alert_id: str, payload: TriageFeedbackPayload):
+async def submit_feedback(alert_id: str, payload: TriageFeedbackPayload, request: Request):
+    require_internal_read(request)
     record = get_triage(alert_id)
     if not record:
         raise HTTPException(status_code=404, detail="Alert not found")
@@ -721,7 +724,8 @@ async def submit_feedback(alert_id: str, payload: TriageFeedbackPayload):
 
 
 @app.post("/triage/{alert_id}/deep-feedback", tags=["2. Observability Engine (Reactive)"])
-async def submit_deep_feedback(alert_id: str, payload: DeepFeedbackPayload):
+async def submit_deep_feedback(alert_id: str, payload: DeepFeedbackPayload, request: Request):
+    require_internal_read(request)
     try:
         store_feedback_context(payload)
         return {"status": "success", "message": "Deep feedback stored", "alert_id": alert_id}
@@ -749,7 +753,8 @@ async def get_frontend_overview():
 
 
 @app.get("/api/software-factory", tags=["Frontend Read"])
-async def get_software_factory():
+async def get_software_factory(request: Request):
+    require_internal_read(request)
     try:
         results = falkor_client.graph.query(
             """
@@ -778,7 +783,8 @@ async def get_software_factory():
 
 
 @app.get("/api/software-factory/{ticket_id}", tags=["Frontend Read"])
-async def get_software_factory_ticket(ticket_id: str):
+async def get_software_factory_ticket(ticket_id: str, request: Request):
+    require_internal_read(request)
     j_res = falkor_client.graph.query(
         """
         MATCH (j:JiraTicket {id: $id})
@@ -817,7 +823,8 @@ async def get_software_factory_ticket(ticket_id: str):
 
 
 @app.get("/api/incidents", tags=["Frontend Read"])
-async def get_incidents():
+async def get_incidents(request: Request):
+    require_internal_read(request)
     try:
         results = falkor_client.graph.query(
             "MATCH (a:Alert) RETURN a.id, a.message, a.status, a.service, a.source"
@@ -856,7 +863,8 @@ async def get_incidents():
 
 
 @app.get("/api/incidents/{alert_id}", tags=["Frontend Read"])
-async def get_incident(alert_id: str):
+async def get_incident(alert_id: str, request: Request):
+    require_internal_read(request)
     res = falkor_client.graph.query(
         "MATCH (a:Alert {id: $id}) RETURN a.message, a.service, a.source",
         {"id": str(alert_id)},
@@ -881,7 +889,8 @@ async def get_incident(alert_id: str):
 
 
 @app.post("/system/reset", tags=["System Management"])
-async def reset_system():
+async def reset_system(request: Request):
+    require_internal_read(request)
     print("\n [SYSTEM] Wiping Graph Cache and Triage Store...")
     try:
         falkor_client.graph.query("MATCH (n) DETACH DELETE n")
@@ -890,3 +899,553 @@ async def reset_system():
         return {"status": "Database cleared successfully"}
     except Exception as e:
         return {"status": "Reset partially successful", "detail": str(e)}
+
+# ======================================================================
+# PAYPAL SANDBOX INTEGRATION (opt-in, sandbox-only)
+# Kept in existing main.py to avoid creating additional project files.
+# ======================================================================
+
+# --- PayPal Sandbox: settings (consolidated from the earlier module) ---
+"""Sandbox-only configuration. Secrets never reach the browser."""
+import os
+from decimal import Decimal, InvalidOperation
+from urllib.parse import urlsplit
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def flag(name, default=False):
+    return os.getenv(name, '1' if default else '0').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def money(name, default):
+    try:
+        val = Decimal(os.getenv(name, default)).quantize(Decimal('0.01'))
+        if val <= 0 or val >= Decimal('10000'):
+            raise ValueError('Price must be greater than zero and below 10000')
+        return str(val)
+    except (InvalidOperation, ValueError) as e:
+        raise RuntimeError(f'Invalid value for {name}') from e
+
+
+def enabled():
+    return flag('BLASTTRACE_PAYPAL_ENABLED')
+
+
+def price(kind):
+    if kind == 'rca':
+        return money('BLASTTRACE_RCA_PRICE_USD', '5.00')
+    if kind == 'factory':
+        return money('BLASTTRACE_FACTORY_PRICE_USD', '2.50')
+    raise ValueError('Unknown product type')
+
+
+def ui_url():
+    value = os.getenv('BLASTTRACE_CHECKOUT_RETURN_URL', 'http://127.0.0.1:8000/index.html').strip()
+    parsed = urlsplit(value)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc or parsed.username or parsed.password or parsed.fragment:
+        raise RuntimeError('Invalid BLASTTRACE_CHECKOUT_RETURN_URL')
+    if parsed.scheme == 'http' and parsed.hostname not in {'localhost', '127.0.0.1'}:
+        raise RuntimeError('Checkout return URL must be HTTPS, except localhost')
+    return value
+
+
+def configured():
+    return bool(os.getenv('PAYPAL_CLIENT_ID') and os.getenv('PAYPAL_CLIENT_SECRET'))
+
+
+def external_mode():
+    return flag('BLASTTRACE_EXTERNAL_ACCESS_MODE')
+
+
+def internal_key():
+    value = os.getenv('BLASTTRACE_INTERNAL_API_KEY', '')
+    if external_mode() and len(value) < 24:
+        raise RuntimeError('BLASTTRACE_INTERNAL_API_KEY must be at least 24 characters when external access mode is on')
+    return value
+
+
+def storage_path():
+    return os.getenv('BLASTTRACE_PAYPAL_DB_PATH', 'blasttrace_paypal.sqlite3')
+
+
+# --- PayPal Sandbox: catalog (consolidated from the earlier module) ---
+"""Public offer previews; deep evidence is never included in these responses."""
+import math
+from fastapi import HTTPException
+from triage_store import get_triage, list_triage
+
+THRESHOLD_PERCENT = 50.0  # strictly greater than 50 is required
+
+
+def _confidence(record):
+    values = []
+    for candidate in record.get('candidates', []) if record else []:
+        try:
+            score = float(candidate.get('final_score'))
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(score) and 0 <= score <= 1:
+            values.append(score * 100)
+    return round(max(values), 1) if values else None
+
+
+def rca_offer(alert_id):
+    record = get_triage(str(alert_id))
+    if not record:
+        raise HTTPException(404, 'Incident not found')
+    score = _confidence(record)
+    return {
+        'type': 'rca', 'resource_id': str(alert_id),
+        'label': f'Incident {alert_id}', 'subtitle': record.get('service') or 'Incident investigation',
+        'ranking_score_pct': score, 'threshold_pct': THRESHOLD_PERCENT,
+        'eligible': score is not None and score > THRESHOLD_PERCENT,
+        'note': 'Hybrid candidate ranking score, not a calibrated probability of correctness.',
+    }
+
+
+def factory_offer(ticket_id):
+    # Only one ticket is looked up, and no detailed blueprint is leaked to the store.
+    from falkordb_manager import falkor_client
+    try:
+        rows = falkor_client.graph.query(
+            'MATCH (j:JiraTicket {id: $id}) RETURN j.id, j.title, j.blueprint',
+            {'id': str(ticket_id)}
+        ).result_set
+    except Exception:
+        raise HTTPException(503, 'Software Factory evidence is not available')
+    if not rows:
+        raise HTTPException(404, 'Software Factory ticket not found')
+    row = rows[0]
+    return {'type': 'factory', 'resource_id': str(row[0]),
+            'label': row[1] or f'Software Factory {row[0]}',
+            'subtitle': 'Proactive code-risk and blast-radius blueprint',
+            'ranking_score_pct': None, 'threshold_pct': None,
+            'eligible': bool(row[2]),
+            'note': 'This lower-priced option does not require the RCA ranking threshold.'}
+
+
+def get_offer(kind, resource_id):
+    if kind == 'rca':
+        return rca_offer(resource_id)
+    if kind == 'factory':
+        return factory_offer(resource_id)
+    raise HTTPException(422, 'Unknown product type')
+
+
+def catalog():
+    rca = []
+    for entry in reversed(list_triage()):
+        if entry.get('alert_id'):
+            rca.append(rca_offer(entry['alert_id']))
+        if len(rca) >= 50:
+            break
+    factory = []
+    try:
+        from falkordb_manager import falkor_client
+        rows = falkor_client.graph.query('MATCH (j:JiraTicket) RETURN j.id, j.title, j.blueprint LIMIT 50').result_set
+        for id_, title, blueprint in rows:
+            factory.append({'type': 'factory', 'resource_id': str(id_), 'label': title or str(id_),
+                'subtitle': 'Proactive code-risk and blast-radius blueprint',
+                'ranking_score_pct': None, 'threshold_pct': None,
+                'eligible': bool(blueprint), 'note': 'Lower-priced proactive analysis'})
+    except Exception:
+        pass
+    return {'rca': rca, 'factory': factory}
+
+
+def delivery(kind, resource_id):
+    if kind == 'rca':
+        from triage_store import get_triage
+        record = get_triage(resource_id)
+        if not record:
+            raise HTTPException(404, 'Investigation was removed or is unavailable')
+        return {'type': kind, 'resource_id': resource_id, 'evidence': record}
+    from falkordb_manager import falkor_client
+    try:
+        rows = falkor_client.graph.query('MATCH (j:JiraTicket {id: $id}) RETURN j.id, j.title, j.blueprint, j.predicted_services, j.predicted_files', {'id': resource_id}).result_set
+    except Exception:
+        raise HTTPException(503, 'Software Factory unavailable')
+    if not rows:
+        raise HTTPException(404, 'Software Factory result not found')
+    r = rows[0]
+    return {'type': kind, 'resource_id': resource_id,
+            'evidence': {'ticket_id': r[0], 'title': r[1], 'blueprint': r[2], 'predicted_services': r[3], 'predicted_files': r[4]}}
+
+
+# --- PayPal Sandbox: store (consolidated from the earlier module) ---
+"""Small durable checkout ledger. Never store the buyer's bearer token in plaintext."""
+import hashlib
+import hmac
+import os
+import sqlite3
+import time
+from contextlib import contextmanager
+from fastapi import HTTPException
+
+
+@contextmanager
+def connection():
+    path = storage_path()
+    folder = os.path.dirname(os.path.abspath(path))
+    os.makedirs(folder, exist_ok=True)
+    db = sqlite3.connect(path, timeout=15)
+    db.row_factory = sqlite3.Row
+    try:
+        db.execute('PRAGMA journal_mode=WAL')
+        db.execute('''CREATE TABLE IF NOT EXISTS checkout (
+            id TEXT PRIMARY KEY, secret_sha256 TEXT NOT NULL, kind TEXT NOT NULL,
+            resource_id TEXT NOT NULL, amount TEXT NOT NULL, currency TEXT NOT NULL,
+            ranking_score_pct REAL, state TEXT NOT NULL, order_id TEXT UNIQUE,
+            capture_id TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+            capture_started_at INTEGER, error_code TEXT
+        )''')
+        db.commit()
+        yield db
+    finally:
+        db.close()
+
+
+def hash_token(token):
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+
+def insert(id_, secret, kind, resource, amount, score):
+    now = int(time.time())
+    with connection() as db:
+        db.execute('INSERT INTO checkout (id,secret_sha256,kind,resource_id,amount,currency,ranking_score_pct,state,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
+            (id_, hash_token(secret), kind, resource, amount, 'USD', score, 'CREATING', now, now))
+        db.commit()
+
+
+def read(id_, secret):
+    if not isinstance(secret, str) or len(secret) < 24 or len(secret) > 250:
+        raise HTTPException(403, 'Invalid checkout session')
+    with connection() as db:
+        row = db.execute('SELECT * FROM checkout WHERE id=?', (id_,)).fetchone()
+    if row is None or not hmac.compare_digest(row['secret_sha256'], hash_token(secret)):
+        raise HTTPException(403, 'Invalid checkout session')
+    return dict(row)
+
+
+def update(id_, **changes):
+    if not changes:
+        return
+    allowed = {'state','order_id','capture_id','capture_started_at','error_code'}
+    if set(changes) - allowed:
+        raise ValueError('Unexpected checkout field')
+    changes['updated_at'] = int(time.time())
+    keys = list(changes)
+    sql = ','.join(f'{key}=?' for key in keys)
+    with connection() as db:
+        db.execute(f'UPDATE checkout SET {sql} WHERE id=?', (*[changes[k] for k in keys], id_))
+        db.commit()
+
+
+def claim_capture(id_):
+    """Only one process may initiate capture at a time; stale attempts can recover."""
+    now = int(time.time())
+    with connection() as db:
+        db.execute('BEGIN IMMEDIATE')
+        row = db.execute('SELECT state,capture_started_at FROM checkout WHERE id=?',(id_,)).fetchone()
+        if not row:
+            db.rollback()
+            raise HTTPException(404,'Checkout not found')
+        if row['state'] == 'PAID':
+            db.commit()
+            return 'PAID'
+        if row['state'] == 'CAPTURING' and row['capture_started_at'] and now-row['capture_started_at'] < 60:
+            db.commit()
+            return 'CAPTURING'
+        if row['state'] not in {'CREATED','PENDING','CAPTURING','CAPTURE_ERROR'}:
+            db.commit()
+            return row['state']
+        db.execute('UPDATE checkout SET state=?,capture_started_at=?,updated_at=? WHERE id=?',('CAPTURING',now,now,id_))
+        db.commit()
+    return 'CLAIMED'
+
+
+# --- PayPal Sandbox: paypal_client (consolidated from the earlier module) ---
+"""PayPal Orders v2 CAPTURE intent, Sandbox only; all calls made from the server."""
+import os
+import uuid
+import httpx
+from fastapi import HTTPException
+
+BASE = 'https://api-m.sandbox.paypal.com'
+
+
+class PayPalGateway:
+    async def _token(self):
+        async with httpx.AsyncClient(timeout=20) as client:
+            try:
+                response = await client.post(
+                    f'{BASE}/v1/oauth2/token',
+                    auth=(os.getenv('PAYPAL_CLIENT_ID',''), os.getenv('PAYPAL_CLIENT_SECRET','')),
+                    headers={'Accept':'application/json'}, data={'grant_type': 'client_credentials'})
+                response.raise_for_status()
+                return response.json()['access_token']
+            except (httpx.HTTPError, ValueError, KeyError) as err:
+                raise HTTPException(502, 'PayPal Sandbox authentication failed') from err
+
+    async def _call(self, method, path, *, idem=None, payload=None):
+        token = await self._token()
+        headers = {'Authorization': f'Bearer {token}', 'Accept':'application/json', 'Content-Type':'application/json'}
+        if idem:
+            headers['PayPal-Request-Id'] = idem
+        async with httpx.AsyncClient(timeout=25) as client:
+            try:
+                response = await client.request(method, f'{BASE}{path}', headers=headers, json=payload)
+                response.raise_for_status()
+                return response.json()
+            except (httpx.HTTPError, ValueError) as err:
+                # Never reveal API credentials, raw provider messages, or full request bodies.
+                raise HTTPException(502, f'PayPal Sandbox {method} operation failed; status can be retried') from err
+
+    async def create(self, checkout_id, label, amount, return_url, cancel_url):
+        return await self._call('POST','/v2/checkout/orders',idem=f'bt-create-{checkout_id[:26]}',payload={
+            'intent':'CAPTURE',
+            'purchase_units':[{'custom_id': checkout_id,
+                'description': label[:126], 'amount':{'currency_code':'USD','value':amount}}],
+            'payment_source':{'paypal':{'experience_context':{
+                'shipping_preference':'NO_SHIPPING','user_action':'PAY_NOW',
+                'return_url':return_url,'cancel_url':cancel_url}}}
+        })
+
+    async def get(self, order_id):
+        return await self._call('GET', f'/v2/checkout/orders/{order_id}')
+
+    async def capture(self, checkout_id, order_id):
+        return await self._call('POST', f'/v2/checkout/orders/{order_id}/capture',
+            idem=f'bt-capture-{checkout_id[:25]}', payload={})
+
+
+def checked_capture(order, expected_id, expected_amount, expected_order):
+    """Only a real, matching COMPLETED capture unlocks the purchased output."""
+    from decimal import Decimal, InvalidOperation
+    if order.get('id') != expected_order or order.get('status') != 'COMPLETED':
+        return None
+    units = order.get('purchase_units') or []
+    if len(units) != 1 or units[0].get('custom_id') != expected_id:
+        return None
+    captures = (units[0].get('payments') or {}).get('captures') or []
+    for capture in captures:
+        if capture.get('status') != 'COMPLETED' or not capture.get('id'):
+            continue
+        amount = capture.get('amount') or {}
+        try:
+            equal = Decimal(str(amount.get('value'))) == Decimal(expected_amount)
+        except (InvalidOperation, TypeError):
+            equal = False
+        if amount.get('currency_code') == 'USD' and equal:
+            return str(capture['id'])
+    return None
+
+
+# --- PayPal Sandbox: auth (consolidated from the earlier module) ---
+"""Opt-in protection of the older public RCA endpoints for external deployment.
+
+Real deployments should replace the internal key with authenticated identities/RBAC.
+"""
+import hmac
+from fastapi import HTTPException, Request
+
+
+def require_internal_read(request: Request):
+    if not external_mode():
+        return
+    expected = internal_key()  # fails closed if not configured
+    supplied = request.headers.get('X-BlastTrace-Internal-Key', '')
+    if not hmac.compare_digest(supplied, expected):
+        raise HTTPException(403, 'Internal developer access required. Paid results use /api/paypal/delivery.')
+
+
+# --- PayPal Sandbox: routes (consolidated from the earlier module) ---
+"""Purchase workflow: checked RCA ranking -> PayPal -> captured delivery.
+
+This is an optional Sandbox demo, not a production merchant authentication service.
+"""
+import secrets
+import uuid
+from urllib.parse import urlsplit
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+from typing import Literal
+
+router = APIRouter(prefix='/api/paypal', tags=['PayPal Sandbox — paid AI investigations'])
+
+
+class CheckoutInput(BaseModel):
+    kind: Literal['rca','factory']
+    resource_id: str = Field(min_length=1, max_length=120)
+
+
+class SessionInput(BaseModel):
+    checkout_id: str = Field(min_length=32, max_length=32)
+    checkout_token: str = Field(min_length=24, max_length=250)
+
+
+def require_enabled():
+    if not enabled():
+        raise HTTPException(503, 'PayPal Sandbox feature is disabled. Set BLASTTRACE_PAYPAL_ENABLED=1.')
+    if not configured():
+        raise HTTPException(503, 'PayPal Sandbox credentials are not configured on this backend.')
+
+
+def status_fields(row):
+    return {
+        'checkout_id': row['id'], 'kind': row['kind'],
+        'resource_id': row['resource_id'], 'amount_usd': row['amount'],
+        'ranking_score_pct': row['ranking_score_pct'],
+        'state': row['state'], 'paypal_order_id': row['order_id'],
+        'capture_id': row['capture_id'],
+        'delivery_available': row['state'] == 'PAID',
+    }
+
+
+@router.get('/config')
+def public_config():
+    return {'enabled': enabled(), 'sandbox_only': True,
+        'paypal_configured': configured(), 'rca_price_usd': price('rca'),
+        'factory_price_usd': price('factory'), 'rca_minimum_ranking_pct_exclusive': 50,
+        'note': 'RCA ranking scores are heuristic, not calibrated probabilities. No purchase is required for an inconclusive investigation.'}
+
+
+@router.get('/catalog')
+def public_catalog():
+    require_enabled()
+    return catalog()
+
+
+@router.get('/offer')
+def offer(kind: Literal['rca','factory'], resource_id: str):
+    require_enabled()
+    result = get_offer(kind, resource_id)
+    return {**result, 'price_usd': price(kind)}
+
+
+@router.post('/checkout')
+async def create_checkout(body: CheckoutInput):
+    require_enabled()
+    offer_data = get_offer(body.kind, body.resource_id)
+    if not offer_data['eligible']:
+        raise HTTPException(409, 'This analysis does not meet the purchase eligibility rule; no PayPal order was created.')
+    checkout_id = uuid.uuid4().hex
+    checkout_token = secrets.token_urlsafe(32)
+    amount = price(body.kind)
+    insert(checkout_id, checkout_token, body.kind, body.resource_id,
+                 amount, offer_data['ranking_score_pct'])
+    base = ui_url()
+    separator = '&' if '?' in base else '?'
+    return_url = f'{base}{separator}bt_checkout={checkout_id}'
+    cancel_url = f'{return_url}&bt_cancel=1'
+    gateway = PayPalGateway()
+    try:
+        order = await gateway.create(checkout_id, f'BlastTrace {body.kind.upper()} — {body.resource_id}',
+                                     amount, return_url, cancel_url)
+        order_id = order.get('id')
+        approval = next((link.get('href') for link in order.get('links', [])
+                         if link.get('rel') in ('payer-action','approve')), None)
+        host = urlsplit(approval or '').hostname or ''
+        if not (order_id and approval and urlsplit(approval).scheme == 'https'
+                and (host == 'paypal.com' or host.endswith('.paypal.com'))):
+            raise HTTPException(502, 'PayPal returned an incomplete approval URL')
+        update(checkout_id, state='CREATED', order_id=order_id)
+    except Exception:
+        update(checkout_id, state='CREATE_ERROR', error_code='ORDER_CREATE_FAILED')
+        raise
+    return {'checkout_id': checkout_id, 'checkout_token': checkout_token,
+        'paypal_order_id': order_id, 'approval_url': approval,
+        'amount_usd': amount, 'state': 'CREATED',
+        'note': 'Checkout token is private to this browser session. Sandbox only.'}
+
+
+@router.post('/status')
+def checkout_status(body: SessionInput):
+    require_enabled()
+    return status_fields(read(body.checkout_id, body.checkout_token))
+
+
+@router.post('/complete')
+async def complete_checkout(body: SessionInput):
+    """Never trust browser return. Verify order and captured amount with PayPal server-side."""
+    require_enabled()
+    row = read(body.checkout_id, body.checkout_token)
+    if row['state'] == 'PAID':
+        return status_fields(row)
+    if row['state'] not in ('CREATED','PENDING','CAPTURING','CAPTURE_ERROR'):
+        raise HTTPException(409, 'This order is not ready to complete')
+    gateway = PayPalGateway()
+    details = await gateway.get(row['order_id'])
+    capture_id = checked_capture(details, row['id'], row['amount'], row['order_id'])
+    if capture_id:
+        update(row['id'], state='PAID', capture_id=capture_id)
+        return status_fields(read(body.checkout_id, body.checkout_token))
+    if details.get('id') != row['order_id'] or details.get('intent') != 'CAPTURE':
+        raise HTTPException(409, 'PayPal order identity or intent did not match')
+    units = details.get('purchase_units') or []
+    if len(units) != 1 or units[0].get('custom_id') != row['id']:
+        raise HTTPException(409, 'PayPal order is not linked to this purchase')
+    amount = (units[0].get('amount') or {})
+    from decimal import Decimal, InvalidOperation
+    try:
+        same_amount = Decimal(str(amount.get('value'))) == Decimal(row['amount'])
+    except (InvalidOperation, ValueError, TypeError):
+        same_amount = False
+    if amount.get('currency_code') != 'USD' or not same_amount:
+        raise HTTPException(409, 'PayPal order amount does not match')
+    if details.get('status') != 'APPROVED':
+        # A browser return cannot make payment successful.
+        raise HTTPException(409, 'PayPal buyer approval not confirmed yet')
+    claim = claim_capture(row['id'])
+    if claim == 'CAPTURING':
+        return status_fields(read(body.checkout_id, body.checkout_token))
+    if claim == 'PAID':
+        return status_fields(read(body.checkout_id, body.checkout_token))
+    if claim != 'CLAIMED':
+        raise HTTPException(409, f'Checkout is in {claim} state')
+    try:
+        captured = await gateway.capture(row['id'], row['order_id'])
+        capture_id = checked_capture(captured, row['id'], row['amount'], row['order_id'])
+        if not capture_id:
+            # Some payment methods settle asynchronously. Do not unlock until COMPLETED.
+            update(row['id'], state='PENDING')
+            return status_fields(read(body.checkout_id, body.checkout_token))
+        update(row['id'], state='PAID', capture_id=capture_id)
+        return status_fields(read(body.checkout_id, body.checkout_token))
+    except Exception:
+        # Recoverable using order details + stable PayPal-Request-Id; never assume failure/success.
+        update(row['id'], state='CAPTURE_ERROR', error_code='CAPTURE_UNCONFIRMED')
+        raise
+
+
+@router.post('/delivery')
+def purchased_delivery(body: SessionInput):
+    require_enabled()
+    row = read(body.checkout_id, body.checkout_token)
+    if row['state'] != 'PAID' or not row['capture_id']:
+        raise HTTPException(403, 'PayPal capture has not been confirmed; paid evidence remains locked')
+    return {
+        'receipt': {'checkout_id': row['id'], 'paypal_order_id': row['order_id'],
+                    'capture_id': row['capture_id'], 'amount_usd': row['amount'],
+                    'currency':'USD', 'product':row['kind'], 'state':'CAPTURE_COMPLETED'},
+        'result': delivery(row['kind'], row['resource_id'])
+    }
+
+
+# Register the optional payment endpoints only after their definitions.
+app.include_router(router)
+
+# Serve only the existing dashboard file, NEVER the whole repository folder.
+# Existing GET / stays the backend health check; dashboard is /index.html.
+from pathlib import Path as _BTPath
+from fastapi.responses import FileResponse as _BTFileResponse
+
+@app.get('/index.html', include_in_schema=False)
+async def blasttrace_dashboard():
+    return _BTFileResponse(
+        _BTPath(__file__).resolve().with_name('index.html'),
+        media_type='text/html',
+        headers={'Cache-Control': 'no-store, max-age=0'}
+    )

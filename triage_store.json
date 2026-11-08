@@ -134,5 +134,50 @@
             "engineer_name": "Chinmay",
             "comment": "the given root cause analysis is correct."
         }
+    },
+    "BT-DEMO-CATEGORY-1794053139549-5514": {
+        "alert_id": "BT-DEMO-CATEGORY-1794053139549-5514",
+        "service": "product_explorer",
+        "error_msg": "Product catalog becomes empty when category filters are cleared - Product Explorer displays zero products after users clear every category checkbox, although products exist. Expected: all products remain visible without a category restriction.",
+        "source": "datadog",
+        "status": "Insufficient graph evidence",
+        "candidates": [],
+        "message": "No commit relationships were found for this alert."
+    },
+    "BT-DEMO-SELECTION-1794054469753-601": {
+        "alert_id": "BT-DEMO-SELECTION-1794054469753-601",
+        "service": "product_explorer",
+        "error_msg": "Product details fail to update after selecting a product - In Product Explorer, selecting a product tile sometimes does not open or update the product-details panel. Expected: display details for the clicked product.",
+        "source": "datadog",
+        "status": "Insufficient graph evidence",
+        "candidates": [],
+        "message": "No commit relationships were found for this alert."
+    },
+    "BT-DEMO-SELECTION-1794054570263-2950": {
+        "alert_id": "BT-DEMO-SELECTION-1794054570263-2950",
+        "service": "product_explorer",
+        "error_msg": "Product details fail to update after selecting a product - In Product Explorer, selecting a product tile sometimes does not open or update the product-details panel. Expected: display details for the clicked product.",
+        "source": "datadog",
+        "status": "Insufficient graph evidence",
+        "candidates": [],
+        "message": "No commit relationships were found for this alert."
+    },
+    "BT-DEMO-CATEGORY-1794054594214-4542": {
+        "alert_id": "BT-DEMO-CATEGORY-1794054594214-4542",
+        "service": "product_explorer",
+        "error_msg": "Product catalog becomes empty when category filters are cleared - Product Explorer displays zero products after users clear every category checkbox, although products exist. Expected: all products remain visible without a category restriction.",
+        "source": "datadog",
+        "status": "Insufficient graph evidence",
+        "candidates": [],
+        "message": "No commit relationships were found for this alert."
+    },
+    "BT-DEMO-CATEGORY-1794054615780-496": {
+        "alert_id": "BT-DEMO-CATEGORY-1794054615780-496",
+        "service": "product_explorer",
+        "error_msg": "Product catalog becomes empty when category filters are cleared - Product Explorer displays zero products after users clear every category checkbox, although products exist. Expected: all products remain visible without a category restriction.",
+        "source": "datadog",
+        "status": "Insufficient graph evidence",
+        "candidates": [],
+        "message": "No commit relationships were found for this alert."
     }
 }

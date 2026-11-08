@@ -1,7 +1,5 @@
 #  BlastTrace-Falkor: Graph-Powered DevOps & Root Cause Analysis
 
-> **WeMakeDevs × FalkorDB Hackathon — Graph Hacks: Context for AI Agents**  
-> **Track 01 — Agents That Act on Connected Data**
 
 [![FalkorDB](https://img.shields.io/badge/Graph_Database-FalkorDB-red?style=for-the-badge)](https://www.falkordb.com/)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -22,6 +20,53 @@ Both engines share a connected software-lifecycle graph rather than treating req
 | :--- | :--- |
 |  **Working demo video** | [Watch BlastTrace in action](https://youtu.be/jcgvUy7pPas?si=V2kmy5vhlOVVY5uV) |
 |  **Salesforce E-Bikes test repository** | [kumarisneha4121-ops/ebikes-lwc](https://github.com/kumarisneha4121-ops/ebikes-lwc) |
+
+---
+
+## PayPal Sandbox — optional on-demand investigation checkout
+
+**No new source files required.** The Sandbox payment endpoints and the original RCA / Software Factory engines reside in `main.py`. The payment interface is embedded in the existing `index.html`.
+
+Buyers may purchase either:
+- **Deep RCA:** $5.00 (configurable); only an existing incident with a top `final_score` **strictly above 0.50** is offered. This hybrid ranking score is a heuristic, **not** a calibrated probability of a correct root cause.
+- **Software Factory only:** $2.50 (configurable); requires an existing completed blueprint.
+
+BlastTrace creates a real PayPal Sandbox CAPTURE-intent order with a server-controlled price. After buyer approval, **the server checks PayPal, captures with a stable idempotency key and verifies a COMPLETED capture with the correct purchase, currency and amount** before unlocking the purchased result. A browser redirect alone does not unlock results. This is not AgentGain's authorization-before-evaluation workflow; the result already exists before checkout.
+
+### Sandbox setup
+
+From the project directory, install dependencies using `pip install -r requirements.txt`. Set these variables in your existing `.env` (never commit it):
+
+```env
+BLASTTRACE_PAYPAL_ENABLED=1
+PAYPAL_CLIENT_ID=YOUR_PAYPAL_SANDBOX_CLIENT_ID
+PAYPAL_CLIENT_SECRET=YOUR_PAYPAL_SANDBOX_CLIENT_SECRET
+BLASTTRACE_CHECKOUT_RETURN_URL=http://127.0.0.1:8000/index.html
+BLASTTRACE_RCA_PRICE_USD=5.00
+BLASTTRACE_FACTORY_PRICE_USD=2.50
+BLASTTRACE_PAYPAL_DB_PATH=blasttrace_paypal.sqlite3
+# Optional internal-only access to legacy detailed endpoints for shared demos:
+BLASTTRACE_EXTERNAL_ACCESS_MODE=0
+BLASTTRACE_INTERNAL_API_KEY=YOUR_RANDOM_KEY_AT_LEAST_24_CHARACTERS
+```
+
+Start the existing backend (ensure FalkorDB / Groq dependencies work):
+
+```powershell
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+Open **`http://127.0.0.1:8000/index.html`** in your browser. The backend safely serves only the existing `index.html`; **do not run** `python -m http.server` on the repository directory because it can expose `.env` and saved data. Click **Pay with PayPal**, choose an existing eligible RCA or completed Software Factory blueprint, then follow PayPal Sandbox approval. Use a personal Sandbox buyer account separate from the merchant. Verify the receipt and the paid JSON result appear only after a confirmed capture. An interrupted checkout may be reconciled with **Restore purchase** in the original browser tab.
+
+Quick checks: `http://127.0.0.1:8000/api/paypal/config` and `http://127.0.0.1:8000/docs`. The Sandbox integration is **off by default** when `BLASTTRACE_PAYPAL_ENABLED` is absent.
+
+### Security and deployment restrictions
+
+The existing legacy detailed API endpoints can expose RCA and blueprint data when `BLASTTRACE_EXTERNAL_ACCESS_MODE=0`. **For any shared demonstration**, configure `BLASTTRACE_EXTERNAL_ACCESS_MODE=1` with a strong internal key, and independently verify all exposed routes. The internal key is a demo control, **not production authentication**. Other existing API routes, webhooks and CORS settings also require security hardening before public deployment. Do not treat this repository as a production-safe commercial paywall.
+
+The payment ledger uses a SQLite database path configured above; its files are ignored by Git. Use persistent storage and proper backups. For multiple backend instances, replace it with an atomic shared database. The payment token is stored in the current browser session and is never sent to PayPal. **PayPal Live is not supported.**
+
+The ZIP is based on the supplied `BlastTrace-Falkor-main.zip` and does not include newer Switch / Mattermost integrations. Merge only the reviewed changes into your team's current branch to avoid overwriting work.
 
 ---
 
@@ -105,7 +150,7 @@ python mozilla_ingestor.py
 **Step 7 — Serve the dashboard.** In a terminal within `BlastTrace-Falkor`:
 
 ```powershell
-python -m http.server 5500
+python serve_frontend.py
 ```
 
 Open [http://localhost:5500/index.html](http://localhost:5500/index.html). The local frontend uses the backend at `http://localhost:8000`.
@@ -125,7 +170,7 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8000
 **Terminal 2 — Frontend**
 
 ```powershell
-python -m http.server 5500
+python serve_frontend.py
 ```
 
 Open [http://localhost:5500/index.html](http://localhost:5500/index.html).

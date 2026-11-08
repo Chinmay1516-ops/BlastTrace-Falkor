@@ -172,6 +172,50 @@
     .hero-inner,.nav,.signals{opacity:1;transform:none}
   }
 </style>
+<style id="bt-paypal-style">
+/* Compact PayPal access for narrow viewports; primary desktop navigation unchanged. */
+.bt-paypal-mobile-button{display:none}
+@media(max-width:850px){.bt-paypal-mobile-button{display:inline-block;background:#fff;border:1px solid #c6d9fa;border-radius:9px;padding:8px 12px;color:#1963c6;font-weight:750;cursor:pointer;margin-right:12px}}
+/* New, isolated PayPal Sandbox storefront. Existing dashboard styling is untouched. */
+#bt-paypal-open{color:#1962d9!important;font-weight:750!important;white-space:nowrap}
+#bt-paypal-open:hover{text-decoration:underline!important}
+#bt-paypal-portal{display:none;position:fixed;inset:0;z-index:200000;background:rgba(5,20,44,.65);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+#bt-paypal-portal.bt-visible{display:flex}
+#bt-paypal-portal *{box-sizing:border-box}
+.bt-paypal-panel{position:relative;width:min(940px,98vw);max-height:94vh;overflow:auto;background:#fff;border:1px solid #d2e1f7;border-radius:20px;box-shadow:0 24px 100px rgba(10,30,73,.35);color:#132c56;padding:32px;line-height:1.5}
+.bt-paypal-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.bt-paypal-kicker{letter-spacing:.12em;text-transform:uppercase;font-size:11px;font-weight:800;color:#1667d7}
+.bt-paypal-top h2{font-size:30px;letter-spacing:-.025em;line-height:1.15;margin:8px 0 9px;color:#12284e}
+.bt-paypal-top p{margin:0;font-size:13px;color:#687b95}
+.bt-paypal-close{border:1px solid #c7d7eb;color:#28466f;background:white;border-radius:11px;padding:10px 14px;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:700}
+.bt-paypal-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:23px}
+.bt-paypal-card{border:1px solid #d2e0f1;background:#f6f9fe;border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;color:#183153;transition:border-color .15s,background .15s}
+.bt-paypal-card.bt-selected{border:2px solid #156be5;padding:17px 19px;background:#edf5ff;box-shadow:0 4px 24px rgba(22,108,226,.1)}
+.bt-paypal-card b{display:block;font-size:17px}
+.bt-paypal-card small{display:block;margin-top:5px;font-size:12px;color:#60738d;line-height:1.5}
+.bt-paypal-card strong{display:block;color:#155fd7;font-size:21px;margin-top:12px}
+.bt-paypal-main{margin-top:20px}
+.bt-paypal-main label{display:block;margin-bottom:9px;font-size:12px;font-weight:800;color:#37516f}
+.bt-paypal-main select{width:100%;border:1px solid #c9d7e9;background:#fff;border-radius:11px;color:#12294e;font-size:14px;padding:12px;max-width:100%;outline-offset:2px}
+.bt-paypal-preview{min-height:69px;background:#f6f9fd;border:1px solid #e1e9f3;border-radius:11px;margin-top:13px;padding:13px 15px;color:#526988;font-size:13px}
+.bt-paypal-preview b{color:#193d76}
+.bt-paypal-preview .bt-pass{color:#0c7d5b;font-weight:800}
+.bt-paypal-preview .bt-stop{color:#b14c28;font-weight:800}
+.bt-paypal-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:17px}
+.bt-paypal-btn{background:#0963df;color:#fff;border:0;border-radius:11px;padding:13px 17px;font-size:14px;font-weight:750;cursor:pointer}
+.bt-paypal-btn:disabled{opacity:.5;cursor:not-allowed}
+.bt-paypal-btn.bt-ghost{background:#fff;color:#1a4c96;border:1px solid #cad9ea}
+#bt-paypal-status{padding:12px 14px;border-radius:10px;background:#f6f9fd;border:1px solid #dce8f3;color:#3d5676;font-size:13px;margin-top:16px;min-height:42px;white-space:pre-wrap;overflow-wrap:anywhere}
+#bt-paypal-delivery{margin:18px 0 0}
+#bt-paypal-delivery pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#0a1930;color:#e8f3ff;padding:18px;border-radius:12px;max-height:230px;overflow:auto;font-size:12px}
+.bt-paypal-foot{font-size:11px;color:#7c8da7;margin-top:18px;border-top:1px solid #e2eaf5;padding-top:14px}
+.bt-paypal-internal{margin-top:20px;border-top:1px dashed #d3dfed;padding-top:12px;color:#526a86;font-size:12px}
+.bt-paypal-internal input{display:inline-block;margin:7px 8px 0 0;border:1px solid #cfdbeb;border-radius:8px;padding:10px;font-size:12px;width:min(290px,80%);color:#16345e}
+.bt-paypal-internal button{font-size:12px;border:1px solid #c6d4e9;background:#fff;border-radius:8px;padding:10px;cursor:pointer}
+.bt-paypal-view-btn{border:1px solid #b0cdf4;border-radius:9px;padding:8px 13px;background:#eaf4ff;color:#175ab9;font:700 12px Arial;cursor:pointer;margin-left:12px}
+@media(max-width:700px){.bt-paypal-panel{padding:20px}.bt-paypal-cards{grid-template-columns:1fr}.bt-paypal-top h2{font-size:24px}.bt-paypal-close{padding:7px 9px}}
+
+</style>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -188,8 +232,10 @@
     <a href="#software-factory" id="openSoftwareFactory">Software Factory</a>
     <a href="#incident" id="openInvestigate">Investigate</a>
     <a href="#analytics" id="openAnalytics">Analytics</a>
+    <a href="#paypal" id="bt-paypal-open">Pay with PayPal</a>
   </div>
   <div class="nav-right">
+    <button type="button" id="bt-paypal-mobile-open" class="bt-paypal-mobile-button">PayPal</button>
     <span class="avatar" id="creditsAvatar" role="button" tabindex="0"
           aria-expanded="false" aria-controls="creditsPopover">BT</span>
     <div class="credits-popover" id="creditsPopover" role="dialog" aria-label="BlastTrace developers">
@@ -1128,7 +1174,7 @@ const textOrDash = value =&gt; hasValue(value) ? String(value) : "—";
 async function apiGet(path) {
   const response = await fetch(`${API_BASE}${path}`, {
     method: "GET",
-    headers: { "Accept": "application/json" }
+    headers: { "Accept": "application/json", "X-BlastTrace-Internal-Key": parent.sessionStorage.getItem("bt_internal_key") || "" }
   });
 
   if (!response.ok) {
@@ -2150,7 +2196,7 @@ const esc = (value="") =&gt; String(value).replace(/[&amp;&lt;&gt;"']/g,c=&gt;({
 const has = value =&gt; value !== undefined &amp;&amp; value !== null &amp;&amp; value !== "";
 
 async function apiGet(path) {
-  const res = await fetch(`${API_BASE}${path}`, {headers:{"Accept":"application/json"}});
+  const res = await fetch(`${API_BASE}${path}`, {headers:{"Accept":"application/json","X-BlastTrace-Internal-Key":parent.sessionStorage.getItem("bt_internal_key")||""}});
   if (!res.ok) {
     let msg = `Backend request failed (${res.status})`;
     try {
@@ -3525,7 +3571,7 @@ const esc = (value="") =&gt; String(value).replace(/[&amp;&lt;&gt;"']/g,c=&gt;({
 const val = (...values) =&gt; values.find(v=&gt;v!==undefined &amp;&amp; v!==null &amp;&amp; v!=="");
 
 async function apiGet(path) {
-  const res = await fetch(`${API_BASE}${path}`, {headers:{"Accept":"application/json"}});
+  const res = await fetch(`${API_BASE}${path}`, {headers:{"Accept":"application/json","X-BlastTrace-Internal-Key":parent.sessionStorage.getItem("bt_internal_key")||""}});
   if(!res.ok) throw new Error(`Backend request failed (${res.status})`);
   return res.json();
 }
@@ -3533,7 +3579,7 @@ async function apiGet(path) {
 async function apiPost(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
     method:"POST",
-    headers:{"Content-Type":"application/json","Accept":"application/json"},
+    headers:{"Content-Type":"application/json","Accept":"application/json","X-BlastTrace-Internal-Key":parent.sessionStorage.getItem("bt_internal_key")||""},
     body:JSON.stringify(body)
   });
   if(!res.ok) {
@@ -4321,5 +4367,208 @@ analyticsRefreshTimer=setInterval(boot,5000);
 })();
 </script>
 
+<script id="bt-paypal-inline">
+/* BlastTrace PayPal sandbox purchase portal. Only verified server-side captures unlock results. */
+(() => {
+  const api = () => window.BLASTTRACE_API_BASE || 'http://127.0.0.1:8000';
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let catalog = {rca:[], factory:[]}, cfg = null, mode = 'rca', selected = '', offer = null, session = null;
+  const panel = document.createElement('div');
+  panel.id = 'bt-paypal-portal';
+  panel.setAttribute('role','dialog');
+  panel.setAttribute('aria-label','BlastTrace PayPal Sandbox purchases');
+  panel.innerHTML = `
+    <div class="bt-paypal-panel">
+      <div class="bt-paypal-top">
+        <div><div class="bt-paypal-kicker">BLASTTRACE / ON-DEMAND ACCESS</div>
+          <h2>Pay for what you need.<br>Powered by PayPal Sandbox.</h2>
+          <p>Two options. One trusted payment path. Full results only after a confirmed PayPal capture.</p>
+        </div><button class="bt-paypal-close" id="bt-paypal-close" type="button">Close ✕</button>
+      </div>
+      <div class="bt-paypal-cards">
+        <button type="button" class="bt-paypal-card bt-selected" id="bt-paypal-rca">
+          <b>Deep AI investigation</b><small>Choose an incident with a top RCA ranking score strictly above 50%. See the full evidence after payment.</small>
+          <strong id="bt-paypal-rca-price">$5.00</strong>
+        </button>
+        <button type="button" class="bt-paypal-card" id="bt-paypal-factory">
+          <b>Software Factory only</b><small>Only need proactive code-risk analysis? Purchase just the completed blueprint for a lower price.</small>
+          <strong id="bt-paypal-factory-price">$2.50</strong>
+        </button>
+      </div>
+      <section class="bt-paypal-main">
+        <label id="bt-paypal-select-label" for="bt-paypal-select">Select incident</label>
+        <select id="bt-paypal-select"></select>
+        <div class="bt-paypal-preview" id="bt-paypal-preview">Connect the backend to view available investigations.</div>
+        <div class="bt-paypal-actions">
+          <button type="button" class="bt-paypal-btn" id="bt-paypal-checkout">Pay with PayPal Sandbox</button>
+          <button type="button" class="bt-paypal-btn bt-ghost" id="bt-paypal-refresh">Refresh evidence</button>
+          <button type="button" class="bt-paypal-btn bt-ghost" id="bt-paypal-restore">Restore purchase</button>
+        </div>
+        <div id="bt-paypal-status" role="status" aria-live="polite">Sandbox only. No payment has been initiated.</div>
+        <section id="bt-paypal-delivery"></section>
+      </section>
+      <div class="bt-paypal-internal">
+        <b>Using BlastTrace for your own development team?</b>
+        <div>Enter the internal developer access key only if external-access mode is enabled. This unlocks your original dashboards, not a PayPal transaction.</div>
+        <input type="password" id="bt-paypal-internal-key" placeholder="Internal developer key" autocomplete="off">
+        <button type="button" id="bt-paypal-internal-save">Set internal access</button>
+      </div>
+      <div class="bt-paypal-foot">Prototype marketplace · PayPal Sandbox money only · Rankings are engineering heuristics, not statistical confidence guarantees. Public deployment requires real account authentication and private webhook controls.</div>
+    </div>`;
+  document.body.appendChild(panel);
+  const $ = id => document.getElementById(id);
+  const report = s => {$('bt-paypal-status').textContent = String(s);};
+  const key = id => `bt_paypal_token_${id}`;
+  const savedIdKey = 'bt_paypal_last_checkout';
+  async function req(path, body) {
+    const res = await fetch(api()+path, {method:body?'POST':'GET', headers:{'Accept':'application/json',...(body?{'Content-Type':'application/json'}:{})}, ...(body?{body:JSON.stringify(body)}:{})});
+    let obj = {};
+    try {obj = await res.json();} catch(_) {}
+    if(!res.ok) throw Error(obj.detail || `Backend request failed (HTTP ${res.status})`);
+    return obj;
+  }
+  const selectEntries = () => catalog[mode] || [];
+  function updateMode(next) {
+    mode = next;
+    $('bt-paypal-rca').classList.toggle('bt-selected', next === 'rca');
+    $('bt-paypal-factory').classList.toggle('bt-selected', next === 'factory');
+    $('bt-paypal-select-label').textContent = next === 'rca'?'Select an incident':'Select a completed Software Factory ticket';
+    populate();
+  }
+  function populate(idHint = '') {
+    const entries = selectEntries();
+    $('bt-paypal-select').innerHTML = entries.length
+      ? entries.map(r=>`<option value="${esc(r.resource_id)}">${esc(r.label)} — ${esc(r.subtitle||'')}</option>`).join('')
+      : '<option value="">No eligible results available yet</option>';
+    if(idHint && entries.find(x=>String(x.resource_id) === String(idHint))) $('bt-paypal-select').value = idHint;
+    selected = $('bt-paypal-select').value;
+    updatePreview();
+  }
+  function updatePreview() {
+    selected = $('bt-paypal-select').value;
+    offer = selectEntries().find(x=>String(x.resource_id) === selected);
+    const button = $('bt-paypal-checkout');
+    button.disabled = !offer?.eligible || !cfg?.enabled || !cfg?.paypal_configured;
+    if(!offer){$('bt-paypal-preview').textContent='No processed evidence available. Generate a Software Factory blueprint or wait for the Datadog incident investigation to finish.';return;}
+    if(mode==='rca') {
+      let score = offer.ranking_score_pct;
+      $('bt-paypal-preview').innerHTML = `<b>${esc(offer.label)}</b> · top RCA ranking score: <b>${score==null?'Not available':esc(score)+'%'}</b><br>`+
+        (offer.eligible?'<span class="bt-pass">Eligible: score exceeds 50%. Buyer may proceed to PayPal.</span>':'<span class="bt-stop">Not eligible: no confident candidate above 50%. No payment will be requested.</span>')+
+        '<br><small>Hybrid ranking score; not a calibrated probability.</small>';
+    } else {
+      $('bt-paypal-preview').innerHTML=`<b>${esc(offer.label)}</b><br>`+
+        (offer.eligible?'<span class="bt-pass">Blueprint ready for purchase.</span>':'<span class="bt-stop">Blueprint not ready. No PayPal order will be created.</span>');
+    }
+  }
+  async function refresh() {
+    report('Loading live results…');
+    try {
+      cfg = await req('/api/paypal/config');
+      $('bt-paypal-rca-price').textContent='$'+cfg.rca_price_usd;
+      $('bt-paypal-factory-price').textContent='$'+cfg.factory_price_usd;
+      if(!cfg.enabled || !cfg.paypal_configured){
+        catalog={rca:[],factory:[]};populate();
+        report('Enable BLASTTRACE_PAYPAL_ENABLED=1 and configure your PayPal Sandbox CLIENT_ID and CLIENT_SECRET in the backend .env.');
+        return;
+      }
+      catalog=await req('/api/paypal/catalog');
+      populate(selected);
+      report('Select the investigation or blueprint you need. Only eligible items can create a PayPal order.');
+    } catch(err){report(err.message);$('bt-paypal-checkout').disabled=true;}
+  }
+  async function buy(){
+    if(!offer?.eligible) return;
+    $('bt-paypal-checkout').disabled = true;
+    report('Creating a real PayPal Sandbox order on the backend…');
+    try{
+      const created=await req('/api/paypal/checkout',{kind:mode,resource_id:selected});
+      sessionStorage.setItem(key(created.checkout_id),created.checkout_token);
+      sessionStorage.setItem(savedIdKey,created.checkout_id);
+      report(`PayPal Sandbox order ${created.paypal_order_id} created. Redirecting for buyer approval…`);
+      window.location.assign(created.approval_url);
+    } catch(err){report(err.message);updatePreview();}
+  }
+  async function complete(id, isCancel=false){
+    const token = sessionStorage.getItem(key(id));
+    if(!token){report('This browser does not hold the checkout token. Return using the browser tab that started the purchase.');return;}
+    session={checkout_id:id,checkout_token:token};
+    if(isCancel){report('PayPal Sandbox checkout was cancelled. No payment has been captured.');return;}
+    report('Checking PayPal order and capture status on the server…');
+    try{
+      let state=await req('/api/paypal/complete',session);
+      if(state.state==='CAPTURING' || state.state==='PENDING'){
+        report('PayPal settlement is pending. Refresh or choose Restore purchase to check again.');return;
+      }
+      if(state.state==='PAID'){
+        const data=await req('/api/paypal/delivery',session);
+        $('bt-paypal-delivery').innerHTML=`<h3>Payment verified · purchased evidence unlocked</h3>
+          <p>PayPal Sandbox capture: <b>${esc(data.receipt.capture_id)}</b> · USD ${esc(data.receipt.amount_usd)}</p>
+          <button id="bt-paypal-download" class="bt-paypal-btn bt-ghost" type="button">Download receipt and purchased result</button>
+          <pre id="bt-paypal-evidence"></pre>`;
+        $('bt-paypal-evidence').textContent=JSON.stringify(data.result.evidence,null,2);
+        $('bt-paypal-download').onclick=()=>{
+          const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+          const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='BlastTrace-'+id+'-paid-result.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);
+        };
+        report('CAPTURE_COMPLETED. This purchase is linked to the selected resource. Deep evidence is now available.');
+      } else report(`Server payment state: ${state.state}. No access until CAPTURE_COMPLETED.`);
+    } catch(err){report(err.message);}
+  }
+  async function restore(){
+    const id=sessionStorage.getItem(savedIdKey);
+    if(!id){report('No previous checkout found in this browser session.');return;}
+    await complete(id,false);
+  }
+  async function open(kind=null,id=null){
+    panel.classList.add('bt-visible');
+    document.body.style.overflow='hidden';
+    if(kind==='factory'||kind==='rca')mode=kind;
+    await refresh();
+    updateMode(mode);
+    if(id) populate(String(id));
+  }
+  function close(){panel.classList.remove('bt-visible');document.body.style.overflow='';}
+  $('bt-paypal-close').onclick=close;
+  panel.addEventListener('click',e=>{if(e.target===panel)close();});
+  $('bt-paypal-rca').onclick=()=>updateMode('rca');
+  $('bt-paypal-factory').onclick=()=>updateMode('factory');
+  $('bt-paypal-select').onchange=updatePreview;
+  $('bt-paypal-refresh').onclick=refresh;
+  $('bt-paypal-checkout').onclick=buy;
+  $('bt-paypal-restore').onclick=restore;
+  $('bt-paypal-internal-save').onclick=()=>{
+    const value=$('bt-paypal-internal-key').value.trim();
+    if(value.length<24){report('Enter an internal access key of at least 24 characters.');return;}
+    sessionStorage.setItem('bt_internal_key',value);
+    report('Internal key saved in this browser tab. Close the portal and refresh Software Factory / Incident Investigation.');
+  };
+  const link=$('bt-paypal-open');if(link)link.addEventListener('click',e=>{e.preventDefault();open()});
+  const mobileLink=$('bt-paypal-mobile-open'); if(mobileLink)mobileLink.onclick=()=>open();
+  window.BlastPay={open};
+  // Add a small, non-disruptive link to the existing incident preview after the iframe loads.
+  const frame=$('incidentFrame');
+  if(frame) frame.addEventListener('load',()=>{
+    try{
+      const doc=frame.contentDocument;
+      const group=doc.querySelector('.incident-switcher');
+      if(group && !doc.getElementById('bt-open-from-incident')){
+        const btn=doc.createElement('button');btn.id='bt-open-from-incident';
+        btn.textContent='Pay for deep RCA · PayPal';btn.className='bt-paypal-view-btn';
+        btn.onclick=()=>open('rca',doc.getElementById('incidentSelect')?.value);
+        group.appendChild(btn);
+      }
+    } catch(err){console.warn('PayPal incident shortcut unavailable',err);}
+  });
+  // Handle real PayPal return, but never assume that a redirect means payment succeeded.
+  const params=new URLSearchParams(window.location.search);
+  const returning=params.get('bt_checkout');
+  if(returning){
+    open().then(()=>complete(returning,params.has('bt_cancel')));
+    params.delete('bt_checkout');params.delete('bt_cancel');params.delete('token');params.delete('PayerID');
+    history.replaceState(history.state,'',location.pathname+(params.toString()?'?'+params.toString():'')+location.hash);
+  }
+})();
+
+</script>
 </body>
 </html>

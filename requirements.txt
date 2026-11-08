@@ -6,3 +6,4 @@ python-dotenv
 falkordb
 groq
 chromadb
+httpx

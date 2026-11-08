@@ -6,3 +6,11 @@ env/
 .env
 ngrok.exe
 *.gexf
+chroma_data
+data
+chroma.sqlite3
+chroma_data/chroma.sqlite3
+# PayPal checkout ledger 
+blasttrace_paypal.sqlite3
+blasttrace_paypal.sqlite3-shm
+blasttrace_paypal.sqlite3-wal
