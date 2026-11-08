@@ -1,20 +1,24 @@
-#  BlastTrace-Falkor: Graph-Powered DevOps & Root Cause Analysis
-
+# BlastTrace-Falkor: Graph-Powered DevOps & Root Cause Analysis
 
 [![FalkorDB](https://img.shields.io/badge/Graph_Database-FalkorDB-red?style=for-the-badge)](https://www.falkordb.com/)
+
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+
 [![ChromaDB](https://img.shields.io/badge/Vector_Store-ChromaDB-orange?style=for-the-badge)](https://www.trychroma.com/)
+
 [![Groq](https://img.shields.io/badge/LLM-Groq-blue?style=for-the-badge)](https://groq.com/)
+
 [![MCP](https://img.shields.io/badge/Tooling-MCP-purple?style=for-the-badge)](https://modelcontextprotocol.io/)
 
 **BlastTrace-Falkor** connects Jira requirements, source code, GitHub changes, deployments and observability alerts in a **FalkorDB knowledge graph**. It uses **ChromaDB** for semantic code/context retrieval and **Groq** for AI-assisted analysis.
 
-- **Engine A — Software Factory (proactive):** Understand a change *before deployment*: find affected components and services, consult the repository rulebook, and generate a Test & Blast-Radius Blueprint.
-- **Engine B — Observability (reactive):** Investigate an incident *after deployment*: trace connected services, deployments and real Git commits, inspect code diffs, and rank probable root causes. Engineer feedback can improve future investigations.
+- **Engine A — Software Factory (proactive):** Understand a change **before deployment**: find affected components and services, consult the repository rulebook, and generate a Test & Blast-Radius Blueprint.
+
+- **Engine B — Observability (reactive):** Investigate an incident **after deployment**: trace connected services, deployments and real Git commits, inspect code diffs, and rank probable root causes. Engineer feedback can improve future investigations.
 
 Both engines share a connected software-lifecycle graph rather than treating requirements, code changes and incidents as unrelated documents.
 
-###  Project links
+### Project links
 
 | Resource | Link |
 | :--- | :--- |
@@ -23,170 +27,181 @@ Both engines share a connected software-lifecycle graph rather than treating req
 
 ---
 
-## PayPal Sandbox — optional on-demand investigation checkout
+## PayPal Sandbox — on-demand investigation checkout
 
-**No new source files required.** The Sandbox payment endpoints and the original RCA / Software Factory engines reside in `main.py`. The payment interface is embedded in the existing `index.html`.
+BlastTrace extends its two original AI/graph engineering engines with an **optional PayPal Sandbox checkout**. The integration uses **PayPal Orders v2 with `CAPTURE` intent**, not AgentGain's authorization-before-evaluation flow. In BlastTrace, the engineering analysis must already exist before it can be purchased.
 
-Buyers may purchase either:
-- **Deep RCA:** $5.00 (configurable); only an existing incident with a top `final_score` **strictly above 0.50** is offered. This hybrid ranking score is a heuristic, **not** a calibrated probability of a correct root cause.
-- **Software Factory only:** $2.50 (configurable); requires an existing completed blueprint.
+| Purchase | Sandbox price | Eligibility |
+|---|---:|---|
+| **Deep RCA** | **US$5.00** | Existing incident; top `final_score` **strictly greater than `0.50`** |
+| **Software Factory blueprint** | **US$2.50** | Existing completed blueprint |
 
-BlastTrace creates a real PayPal Sandbox CAPTURE-intent order with a server-controlled price. After buyer approval, **the server checks PayPal, captures with a stable idempotency key and verifies a COMPLETED capture with the correct purchase, currency and amount** before unlocking the purchased result. A browser redirect alone does not unlock results. This is not AgentGain's authorization-before-evaluation workflow; the result already exists before checkout.
+The prices are configurable demonstration prices. The RCA `final_score` is a **heuristic ranking score**, not a calibrated probability of correctness. A score of exactly `0.50` does not qualify.
 
-### Sandbox setup
+### How PayPal is used
 
-From the project directory, install dependencies using `pip install -r requirements.txt`. Set these variables in your existing `.env` (never commit it):
+1. The buyer chooses an eligible existing result. The backend determines the product and price; the browser cannot set the charge.
+2. The backend obtains a **Sandbox OAuth 2.0 token** and creates an Orders v2 `CAPTURE`-intent order.
+3. A separate personal Sandbox buyer account approves the checkout.
+4. On return, the **server** verifies the order, captures it with a stable `PayPal-Request-Id`, then checks for a **`COMPLETED`** capture with the correct product, currency and amount.
+5. Only after verified capture does the purchase-specific delivery API return the paid JSON result and receipt. The browser redirect by itself never unlocks the result.
 
-```env
-BLASTTRACE_PAYPAL_ENABLED=1
-PAYPAL_CLIENT_ID=YOUR_PAYPAL_SANDBOX_CLIENT_ID
-PAYPAL_CLIENT_SECRET=YOUR_PAYPAL_SANDBOX_CLIENT_SECRET
-BLASTTRACE_CHECKOUT_RETURN_URL=http://127.0.0.1:8000/index.html
-BLASTTRACE_RCA_PRICE_USD=5.00
-BLASTTRACE_FACTORY_PRICE_USD=2.50
-BLASTTRACE_PAYPAL_DB_PATH=blasttrace_paypal.sqlite3
-# Optional internal-only access to legacy detailed endpoints for shared demos:
-BLASTTRACE_EXTERNAL_ACCESS_MODE=0
-BLASTTRACE_INTERNAL_API_KEY=YOUR_RANDOM_KEY_AT_LEAST_24_CHARACTERS
-```
+The payment API is integrated into `main.py`; the purchase interface is included in `index.html`. The local payment ledger uses SQLite. **No real funds are transferred**, and PayPal Live is not supported.
 
-Start the existing backend (ensure FalkorDB / Groq dependencies work):
+### PayPal + AI hackathon requirement
 
-```powershell
-python -m uvicorn main:app --host 127.0.0.1 --port 8000
-```
+| Tool | Purpose |
+|---|---|
+| **PayPal Developer Sandbox, OAuth 2.0, Orders v2** | Sandbox checkout, buyer approval, order verification and capture |
+| **`PayPal-Request-Id`** | Stable idempotency identifiers for order creation/capture retries |
+| **Groq API (`openai/gpt-oss-120b` in the revised README; confirm against the running configuration)** | AI-assisted proactive test and blast-radius blueprints |
+| **FalkorDB / Cypher** | Connected requirements, services, source changes, deployments and incidents; multi-hop investigation |
+| **ChromaDB** | Semantic retrieval of code, commits and incident/post-mortem context |
+| **FastAPI / Python** | Orchestration, API endpoints and evidence/checkout checks |
 
-Open **`http://127.0.0.1:8000/index.html`** in your browser. The backend safely serves only the existing `index.html`; **do not run** `python -m http.server` on the repository directory because it can expose `.env` and saved data. Click **Pay with PayPal**, choose an existing eligible RCA or completed Software Factory blueprint, then follow PayPal Sandbox approval. Use a personal Sandbox buyer account separate from the merchant. Verify the receipt and the paid JSON result appear only after a confirmed capture. An interrupted checkout may be reconciled with **Restore purchase** in the original browser tab.
-
-Quick checks: `http://127.0.0.1:8000/api/paypal/config` and `http://127.0.0.1:8000/docs`. The Sandbox integration is **off by default** when `BLASTTRACE_PAYPAL_ENABLED` is absent.
-
-### Security and deployment restrictions
-
-The existing legacy detailed API endpoints can expose RCA and blueprint data when `BLASTTRACE_EXTERNAL_ACCESS_MODE=0`. **For any shared demonstration**, configure `BLASTTRACE_EXTERNAL_ACCESS_MODE=1` with a strong internal key, and independently verify all exposed routes. The internal key is a demo control, **not production authentication**. Other existing API routes, webhooks and CORS settings also require security hardening before public deployment. Do not treat this repository as a production-safe commercial paywall.
-
-The payment ledger uses a SQLite database path configured above; its files are ignored by Git. Use persistent storage and proper backups. For multiple backend instances, replace it with an atomic shared database. The payment token is stored in the current browser session and is never sent to PayPal. **PayPal Live is not supported.**
-
-The ZIP is based on the supplied `BlastTrace-Falkor-main.zip` and does not include newer Switch / Mattermost integrations. Merge only the reviewed changes into your team's current branch to avoid overwriting work.
+**Optional hackathon sponsors:** This version does not claim APIMatic, AG Grid, Bryntum or another optional sponsor integration. FalkorDB, Groq, Datadog, Jira and GitHub are part of the engineering workflow, not claimed as optional PayPal hackathon sponsor integrations.
 
 ---
 
-##  How to Run BlastTrace Locally
+## How to Run BlastTrace Locally
 
-These instructions use **Windows PowerShell**. Initial code indexing and Git ingestion need to be done **once per fresh installation**, not on every startup.
+These instructions are for **Windows PowerShell**, and use the **consolidated, single-origin configuration from the second README**: FastAPI serves both the API and `index.html` on **port `8000`**. The homepage `/` may show a backend status response; open **`/index.html`** for the actual dashboard.
+
+**Do not start `serve_frontend.py` on port `5500` in this consolidated version**; the second document says that file is absent. Do not use `python -m http.server` from the project root either, because this may expose `.env` or saved data.
 
 ### Prerequisites
 
-- **Python 3.10+**, **Git** and **Docker Desktop**
-- A **Groq API key** for the AI features
-- **Jira credentials** only if testing real Jira account integration; dashboard-generated Jira-style requests can be submitted to the backend without them
+- Python **3.11 or 3.12** recommended, Git, Docker Desktop, and internet access for the Groq service.
+- A **Groq API key** for AI features.
+- A **PayPal Sandbox REST application** (client ID and secret) and a separate **personal Sandbox buyer account** if testing checkout.
+- Jira credentials only if testing actual Jira API posting. Dashboard-generated Jira-style scenarios do not require a Jira account.
 
 ### Part 1 — First-time setup
 
-**Step 1 — Clone BlastTrace and the Salesforce E-Bikes test repository.**
+**Step 1 — Clone BlastTrace and the Salesforce E-Bikes demonstration repository.**
 
 ```powershell
 git clone https://github.com/Chinmay1516-ops/BlastTrace-Falkor.git
 cd BlastTrace-Falkor
-git clone https://github.com/kumarisneha4121-ops/ebikes-lwc.git ../ebikes-lwc
+git clone https://github.com/kumarisneha4121-ops/ebikes-lwc.git ..\ebikes-lwc
 ```
 
-**Step 2 — Start FalkorDB using Docker.** Make sure Docker Desktop is running.
+**Step 2 — Start FalkorDB with Docker.**
 
 ```powershell
-docker run -d --name falkordb --restart unless-stopped -p 6379:6379 falkordb/falkordb:latest
+docker run -d --name blasttrace-falkordb --restart unless-stopped -p 6379:6379 falkordb/falkordb:latest
 ```
 
-**Step 3 — Create a Python virtual environment and install dependencies.**
+If this same container already exists, use `docker start blasttrace-falkordb` instead. The application expects FalkorDB on **`localhost:6379`**; check that port is free. If you already created a container named `falkordb` in the earlier setup, you may continue to use that instead of creating a second container, provided it exposes the expected port and data.
+
+**Step 3 — Install Python dependencies.**
 
 ```powershell
-python -m venv venv
+py -3.11 -m venv venv
 .\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
-pip install chromadb mcp
 ```
 
-The core backend uses the repository's `requirements.txt`. If you also want to run the **optional MCP server** (`mcp_server.py`), install `mcp` separately if it is not already available.
+If `py -3.11` is unavailable but a compatible Python 3.11/3.12 interpreter is installed, use `python -m venv venv`. Install `mcp` separately only if needed for the optional `mcp_server.py` and not already included in the requirements.
 
-**Step 4 — Set up environment variables.** Create a `.env` file in `BlastTrace-Falkor`:
+**Step 4 — Configure `.env` in the repository root (next to `main.py`).**
 
-```env
-GROQ_API_KEY=your_groq_api_key_here
+```dotenv
+# AI
+GROQ_API_KEY=YOUR_GROQ_API_KEY
 
-# Optional: required for live Jira account operations
-JIRA_DOMAIN=https://your-domain.atlassian.net
-JIRA_EMAIL=your_email@example.com
-JIRA_API_TOKEN=your_jira_api_token_here
+# Reference demo repository
+BLASTTRACE_REPO_NAME=ebikes-lwc
+
+# PayPal Sandbox (omit or set ENABLED=0 if checkout is not being tested)
+BLASTTRACE_PAYPAL_ENABLED=1
+PAYPAL_CLIENT_ID=YOUR_SANDBOX_CLIENT_ID
+PAYPAL_CLIENT_SECRET=YOUR_SANDBOX_CLIENT_SECRET
+BLASTTRACE_CHECKOUT_RETURN_URL=http://127.0.0.1:8000/index.html
+BLASTTRACE_RCA_PRICE_USD=5.00
+BLASTTRACE_FACTORY_PRICE_USD=2.50
+BLASTTRACE_PAYPAL_DB_PATH=blasttrace_paypal.sqlite3
+
+# Local trusted development only; see Security section for shared demos
+BLASTTRACE_EXTERNAL_ACCESS_MODE=0
+
+# Optional real Jira integration
+# JIRA_DOMAIN=https://your-domain.atlassian.net
+# JIRA_EMAIL=your_email@example.com
+# JIRA_API_TOKEN=your_jira_api_token
 ```
 
-**Step 5 — Start the FastAPI backend (Terminal 1).**
+**Never commit `.env` or API credentials.** If credentials were exposed in a commit, chat or screenshot, rotate them. For a shared restricted demo, set `BLASTTRACE_EXTERNAL_ACCESS_MODE=1` and configure a fresh `BLASTTRACE_INTERNAL_API_KEY` of at least 24 characters; this is a demo gate, not full production authentication.
+
+**Step 5 — Start FastAPI (Terminal 1).**
 
 ```powershell
 .\venv\Scripts\Activate.ps1
 python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-Keep this terminal running. Verify that [http://localhost:8000/](http://localhost:8000/) responds with the backend status message.
+Keep this terminal open. The important URLs are:
 
-**Step 6 — Initialize the code index and Git history (Terminal 2).** Open a **second PowerShell terminal** in `BlastTrace-Falkor`:
+| URL | Purpose |
+|---|---|
+| `http://127.0.0.1:8000/index.html` | **BlastTrace dashboard + PayPal UI** |
+| `http://127.0.0.1:8000/` | Backend status/home response, **not** necessarily the dashboard |
+| `http://127.0.0.1:8000/docs` | Swagger / FastAPI documentation |
+| `http://127.0.0.1:8000/api/paypal/config` | Sandbox checkout feature/configuration status |
+| `http://127.0.0.1:8000/api/paypal/catalog` | Available existing-result offers, if enabled |
+
+**Step 6 — Index code and real Git history (Terminal 2; fresh installations only).**
 
 ```powershell
 .\venv\Scripts\Activate.ps1
-
-# Point ingestion scripts to your own clone (not a developer-specific Windows path)
 $env:EBIKES_REPO_PATH = (Resolve-Path ..\ebikes-lwc).Path
 $env:BLASTTRACE_REPO_NAME = "ebikes-lwc"
 
-# On a fresh installation, discard a copied indexing ledger, if present,
-# so files are indexed into this installation's FalkorDB graph.
+# On a fresh installation ONLY, discard a stale copied indexing ledger.
 Remove-Item .\data\index_cache\ebikes-lwc.index_cache.json -ErrorAction SilentlyContinue
 
-# Index source files into FalkorDB and ChromaDB
 python codebase_indexer.py
-
-# Ingest actual Git commits/diffs and create graph/deployment relationships
 python mozilla_ingestor.py
 ```
 
-**Step 7 — Serve the dashboard.** In a terminal within `BlastTrace-Falkor`:
-
-```powershell
-python serve_frontend.py
-```
-
-Open [http://localhost:5500/index.html](http://localhost:5500/index.html). The local frontend uses the backend at `http://localhost:8000`.
+The ingestion step depends on the FastAPI backend, the accessible repository path and running FalkorDB. It indexes the actual E-Bikes code and Git history into the graph/vector context. **Do not repeat initialization on every startup.** Existing ChromaDB files or index cache metadata alone do not guarantee a usable, populated FalkorDB graph on a brand-new machine.
 
 ### Part 2 — Running BlastTrace again
 
-Once the index and Git relationships have been prepared, use the **same existing Docker container and database files**:
-
-**Terminal 1 — Docker and backend**
+Preserve your existing FalkorDB container/data, indexing cache and `chroma_data` directory. You usually only need:
 
 ```powershell
-docker start falkordb
+docker start blasttrace-falkordb
 .\venv\Scripts\Activate.ps1
 python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-**Terminal 2 — Frontend**
+Open **`http://127.0.0.1:8000/index.html`**. No separate `5500` frontend server is required. If the original container is named `falkordb`, run `docker start falkordb` instead.
 
-```powershell
-python serve_frontend.py
-```
+### Part 3 — Test the PayPal Sandbox purchase
 
-Open [http://localhost:5500/index.html](http://localhost:5500/index.html).
+1. Verify `/api/paypal/config` reports `enabled: true` and `paypal_configured: true`.
+2. Generate or load a completed blueprint or an existing RCA with eligible top `final_score`.
+3. From the dashboard select **Pay with PayPal** and choose the eligible result.
+4. Approve using a **personal Sandbox buyer**, not your Sandbox merchant account.
+5. Return to the **same browser session**. Confirm the server reports a **`COMPLETED`** capture and displays the receipt and paid JSON result. If interrupted, try **Restore purchase** from the original browser session.
+6. Check a negative case: an RCA score of `0.50` or below must not permit Deep RCA checkout; cancelled/unapproved/incorrect-token payment must not unlock results.
 
-**No re-indexing or Git re-ingestion is needed** if the existing FalkorDB data and `chroma_data` directory are retained. Deleting or replacing the database/container without restoring its data may require initialization again.
+An isolated mocked PayPal provider test is **not** proof of a real Sandbox transaction. Run a credential-backed end-to-end test before describing the payment demo as fully verified.
 
 ---
 
-##  Judge Quick-Test Guide — Test Both Engines
+## Judge Quick-Test Guide — Test Both Engines
 
 After completing the local setup, use the following **one-click dashboard triggers**. They send real backend requests using controlled E-Bikes demonstration scenarios; the investigation results are generated by the processing pipeline, not shown as static prewritten results.
 
 ### 1️ Engine A — Software Factory (Proactive)
 
 1. Open **Software Factory**.
+
 2. Click **Generate Jira Ticket 1 — Category Filters** or **Generate Jira Ticket 2 — Product Selection**.
+
 3. Review the **AI Test & Blast-Radius Blueprint**, including affected services, code components, impacted APIs and test scenarios.
 
 **Behind the scenes:** The Jira-style request reaches `/webhook/jira`; the backend stores the ticket context in **FalkorDB**, searches related code through **ChromaDB**, fetches the team's `.blasttrace_rules.md` **live from GitHub**, and uses **Groq** to generate and verify the blueprint. With real Jira credentials and an appropriate issue, the backend can publish the blueprint as a Jira comment.
@@ -194,7 +209,9 @@ After completing the local setup, use the following **one-click dashboard trigge
 ### 2️ Engine B — Observability (Reactive Incident Triage)
 
 1. Open **Investigate**.
+
 2. Click **Investigate Incident 1 — Category Filters** or **Investigate Incident 2 — Product Selection**.
+
 3. Inspect the **Top-3 probable root causes**, confidence scores, connected deployment/Git evidence and code diffs.
 
 **Behind the scenes:** The dashboard sends a prepared incident payload to `/webhook/alert`. BlastTrace creates an alert in **FalkorDB**, traverses the connected service/deployment/commit/component graph and combines graph evidence with **ChromaDB** semantic similarity and time-related signals to rank suspect commits.
@@ -203,7 +220,18 @@ After completing the local setup, use the following **one-click dashboard trigge
 
 ---
 
-##  Demo Scenarios & Data Authenticity
+### 3. PayPal — Sandbox checkout (optional extension)
+
+1. With the app on port `8000`, open `/index.html`, then confirm the PayPal config and catalog endpoints.
+2. Generate an eligible existing result using Engine A or B. The purchased analysis is **already computed** before checkout.
+3. Choose the appropriate product, approve the PayPal Sandbox order using the separate personal buyer and return to the same browser session.
+4. Inspect the verified capture, receipt and unlocked JSON result. Test cancelled/unapproved and ineligible purchases to confirm that the result stays locked.
+
+**Verification boundary:** The supplied revised README reports mocked payment-provider checks, not an independently completed live PayPal Sandbox transaction. Judges should run the positive checkout themselves with Sandbox credentials.
+
+---
+
+## Demo Scenarios & Data Authenticity
 
 The demonstrations use a **fork of Salesforce's open-source E-Bikes Lightning Web Components (LWC) application**. We intentionally introduced two bugs and committed them to GitHub so that BlastTrace could analyze real source changes in repeatable incidents.
 
@@ -217,6 +245,7 @@ The demonstrations use a **fork of Salesforce's open-source E-Bikes Lightning We
 **Actual Git commits:** [SFDC-2101 · `6649310`](https://github.com/kumarisneha4121-ops/ebikes-lwc/commit/6649310) · [SFDC-2102 · `aa4a626`](https://github.com/kumarisneha4121-ops/ebikes-lwc/commit/aa4a626)
 
 Live GitHub Rulebook: We also created and pushed **.blasttrace_rules.md** to our E-Bikes repository, which BlastTrace fetches live from GitHub to generate and validate AI Test & Blast-Radius Blueprints using project-specific coding and testing rules.
+
 ### What is real, automated, or simulated?
 
 | Source / component | How it is used in BlastTrace |
@@ -232,26 +261,34 @@ This approach keeps the demo repeatable while showing exactly where live externa
 
 ---
 
-##  The Problem & Why Graphs?
+## The Problem & Why Graphs?
 
 Modern software engineering teams suffer from **Disconnected Context**:
+
 * **Before Deployment (Siloed Planning):** When a Jira ticket is logged, developers guess which downstream microservices or APIs might break. Standard RAG agents only retrieve text snippets—they do not know structural service dependencies.
+
 * **During Production Incidents (Alert Fatigue):** When a 500 error spikes in Datadog/ELK, SREs waste hours manually correlating logs, APM stack traces, recent Git commits, and Jira tickets.
 
 ### How FalkorDB Shapes the Agent's Decisions
+
 **BlastTrace-Falkor** places the AI agent's entire operational worldview inside **FalkorDB**:
+
 1. **Multi-Hop Reasoning Over Connected Data:** Instead of running vector search across thousands of unrelated commits, the agent uses FalkorDB Cypher traversals to isolate the exact subgraph of deployments and commits connected to the failing microservice.
+
 2. **Graph Queries as Agent Tools (via MCP):** Exposed through `mcp_server.py`, agents invoke FalkorDB Cypher traversals dynamically to inspect blast radius, trace commit-to-ticket lineage, and query service topology.
+
 3. **Persistent Memory & Graph Weight Calibration:** When engineers validate a root cause on the dashboard, BlastTrace updates relationship weights directly in FalkorDB and stores the vectorized post-mortem in ChromaDB—creating a continuous institutional memory flywheel.
 
 ---
 
-##  System Architecture: 21-Step Dual-Engine Pipeline
+## System Architecture: 21-Step Dual-Engine Pipeline
 
 BlastTrace operates as a closed-loop system consisting of **Engine A (Proactive Software Factory)** and **Engine B (Reactive Observability & Context Flywheel)**.
 
 ```
+
 +---------------------------------------------------------------------------------------------------+
+
 |                        ENGINE A: THE SOFTWARE FACTORY (PROACTIVE PIPELINE)                        |
 |                                                                                                   |
 |  [1. Jira Requirement] ──► [2. FalkorDB Ticket Node] ──► [3. Predictive Blast Radius]             |
@@ -263,10 +300,15 @@ BlastTrace operates as a closed-loop system consisting of **Engine A (Proactive 
 |                                                                     │                             |
 |                                                                     ▼                             |
 |  [11. Deployment Edge: PR -> Deployment -> Service] ◄── [10. Joint Graph-Vector Fusion]           |
+
 +---------------------------------------------------------------------------------------------------+
+
                                                   │
+
                                                   ▼
+
 +---------------------------------------------------------------------------------------------------+
+
 |                      ENGINE B: THE OBSERVABILITY ENGINE (REACTIVE TRIAGE)                         |
 |                                                                                                   |
 |  [12. Agnostic Logs (Datadog/ELK)] + [13. Active APM Trace] ──► [14. Correlated Anomaly]          |
@@ -279,59 +321,97 @@ BlastTrace operates as a closed-loop system consisting of **Engine A (Proactive 
 |                                                                            │                      |
 |                                                                            ▼                      |
 |                                                           [21. Post-Mortem Institutional Memory]  |
+
 +---------------------------------------------------------------------------------------------------+
+
 ```
 
 ### Detailed Step-by-Step Workflow
 
-####  Engine A: The Software Factory (Proactive Pipeline)
-* **`[1. Requirement Ingest]`** A new code change requirement or bug fix is logged in **JIRA** (or triggered via the dashboard's *Generate Jira* button).
+#### Engine A: The Software Factory (Proactive Pipeline)
+
+* **`[1. Requirement Ingest]`** A new code change requirement or bug fix is logged in **JIRA** (or triggered via the dashboard's **Generate Jira** button).
+
 * **`[2. Knowledge Graph Node]`** The FastAPI backend (`main.py`) intercepts the JIRA webhook and instantly instantiates a `[Ticket]` node in **FalkorDB**.
+
 * **`[3. Predictive Dependency]`** A semantic model converts the JIRA text into a vector (`chroma_manager.py`), maps it against historical code vectors and past incident post-mortems, and queries **FalkorDB** to predict microservices/APIs within the "blast radius."
+
 * **`[4. Rulebook Ingestion]`** FastAPI asynchronously fetches the repository's `.blasttrace_rules.md` (`skills.md`) architectural safety rules.
-* **`[5. Test Plan Generation]`** The LLM processes the FalkorDB dependency map and rulebook to auto-generate a metadata blueprint listing: *Affected Services*, *Impacted APIs*, and *Required Test Scenarios*.
+
+* **`[5. Test Plan Generation]`** The LLM processes the FalkorDB dependency map and rulebook to auto-generate a metadata blueprint listing: **Affected Services**, **Impacted APIs**, and **Required Test Scenarios**.
+
 * **`[6. Plan Verification Loop]`** The agent performs a self-correction validation check to ensure generated test names and service boundaries match safety guidelines in `skills.md`.
+
 * **`[7. Automated JIRA Push]`** BlastTrace uses the JIRA REST API to push a structured Markdown comment directly onto the JIRA ticket with the checklist of Affected Services, APIs, and Required Tests.
+
 * **`[8. Git-to-JIRA Edge]`** The developer writes code and opens a Pull Request. Structural edges connect `(:Commit)-[:PART_OF]->(:PullRequest)-[:ADDRESSES]->(:Ticket)` in **FalkorDB**.
+
 * **`[9. Code Verification & Self-Correction Loop]`** The agent parses the PR code diff against the generated JIRA Test Blueprint. If acceptance criteria or mandatory tests are missing, BlastTrace flags missing criteria.
+
 * **`[10. Joint Vector Fusion]`** Once verified, the indexer (`codebase_indexer.py`) parses code syntax, generates a Code Syntax Vector in **ChromaDB**, and binds it via shared IDs to structural graph nodes in **FalkorDB**.
+
 * **`[11. Deployment Tracking]`** When code goes live (`simulate_day_shift.py`), structural edges bind `(:Commit)<-[:INCLUDES]-(:Deployment)-[:AFFECTS]->(:Service)`.
 
-####  Engine B: The Observability Engine (Reactive Triage)
+#### Engine B: The Observability Engine (Reactive Triage)
+
 * **`[12. Agnostic Log Ingestion]`** BlastTrace ingests production telemetry from Datadog, ELK/Kibana, or New Relic via `/webhook/alert`, parsing server error logs into a unified schema.
+
 * **`[13. Active APM Integration]`** Simultaneously, BlastTrace ingests high-fidelity JSON execution traces from APM tools (e.g., AppDynamics), capturing runtime bytecode instrumentation and the exact failing function/class (`ProductController.cls`).
+
 * **`[14. Correlated Anomaly]`** Under live traffic, when a failure occurs, the APM fires the deep execution trace (root cause location) while log adapters capture the 500 server errors (symptoms).
+
 * **`[15. Unified Alert Node]`** FastAPI correlates the system logs with the specific APM trace and instantiates a `[Unified Alert]` node in **FalkorDB** linked directly to the failing `[Service]` and `[Component]`.
+
 * **`[16. Graph Traversal Triage]`** The engine performs a **multi-hop Cypher traversal upward** from the `[Alert]` node in FalkorDB, isolating recent `[Deployments]`, related `[Commits]`, and `[Components]` tied to that failing service.
-* **`[17. Hybrid Ranking Search]`** The AI executes vector proximity calculations *only* on the graph-isolated suspect commits, combining APM semantic context, chronological decay, FalkorDB edge weights, and past incident memory.
-* **`[18. Root Cause Ranking]`** Outputs an ordered leaderboard of the **Top 3 probable root causes** with calibrated confidence scores and technical justifications matching telemetry to code diffs.
+
+* **`[17. Hybrid Ranking Search]`** The AI executes vector proximity calculations **only** on the graph-isolated suspect commits, combining APM semantic context, chronological decay, FalkorDB edge weights, and past incident memory.
+
+* **`[18. Root Cause Ranking]`** Outputs an ordered leaderboard of the **Top 3 probable root causes** with heuristic ranking scores and technical justifications matching telemetry to code diffs.
+
 * **`[19. Automated Triage Alert]`** Updates the interactive **Investigate** dashboard showing the ranked leaderboard, responsible code diffs, and the original JIRA ticket owner.
+
 * **`[20. Graph Weight Calibration]`** Engineers validate which recommendation was correct (`/api/feedback`), dynamically updating graph edge weights in **FalkorDB** to optimize future traversals.
+
 * **`[21. Context Flywheel & LLM Institutional Memory]`** Engineers submit structured post-mortem feedback detailing actual root cause, trace validity, and final code fix. This payload is vectorized into **ChromaDB** and linked in **FalkorDB**, permanently refining future predictions.
 
 ---
 
-##  FalkorDB Graph Data Model
+## FalkorDB Graph Data Model
 
 BlastTrace models the entire software lifecycle in a single connected **FalkorDB** property graph (`BlastTraceGraph`).
 
 ### Graph Schema Diagram
 
 ```
+
 (:Ticket {id, title, owner, status})
+
    ▲
+
    │ [:ADDRESSES]
+
 (:PullRequest {id, title, author})
+
    ▲
+
    │ [:PART_OF]
+
 (:Commit {hash, message, author, timestamp, jira_id}) ──[:MODIFIES {weight}]──► (:Component {name, file_path, type})
+
    ▲                                                                                   │
+
    │ [:INCLUDES]                                                                       │ [:BELONGS_TO]
+
    │                                                                                   ▼
+
 (:Deployment {id, timestamp, status}) ──────────────[:AFFECTS {weight}]────────► (:Service {name, tier, status})
+
                                                                                        ▲
+
                                                                                        │ [:TRIGGERED_ON]
+
                                                                                  (:Alert {id, service, error_log, apm_trace, timestamp})
+
 ```
 
 ### Node Labels & Properties
@@ -348,97 +428,222 @@ BlastTrace models the entire software lifecycle in a single connected **FalkorDB
 ### Relationship Types
 
 * `(:Component)-[:BELONGS_TO]->(:Service)` — Maps source files (`ProductController.cls`, `productTileList.js`) to their parent service.
+
 * `(:Component)-[:DEPENDS_ON {weight}]->(:Component)` — Structural import/call dependency between code components.
+
 * `(:Commit)-[:MODIFIES {weight}]->(:Component)` — Connects a Git commit to the exact files it mutated.
+
 * `(:Commit)-[:ADDRESSES]->(:Ticket)` — Links commits and PRs back to the originating Jira ticket (`SFDC-2101`, `SFDC-2102`).
+
 * `(:Deployment)-[:INCLUDES]->(:Commit)` & `(:Deployment)-[:AFFECTS]->(:Service)` — Tracks which commits were shipped to which live service.
+
 * `(:Alert)-[:TRIGGERED_ON]->(:Service)` — Connects a live production incident to the impacted service for upward RCA traversal.
 
 ---
 
-##  Core Cypher Queries & Graph Algorithms (With File Locations)
+## Core Cypher Queries & Graph Algorithms (With File Locations)
 
 All Cypher queries and graph algorithms are implemented in Python using the official `falkordb` client. Below are the core queries that power the agent and the exact files where they reside:
 
 ### 1. Multi-Hop Upward Incident Triage Traversal (Engine B)
+
 * **File Location:** `falkordb_manager.py` & `main.py` (invoked during `/webhook/alert` and `/api/investigate`)
+
 * **Purpose:** When an alert fires on a service (e.g., `product_explorer`), the agent traverses **upward** across multiple hops (`Service` ➔ `Deployment` / `Component` ➔ `Commit` ➔ `Ticket`) to isolate only commits that structurally touched the failing service.
 
 ```cypher
+
 MATCH (s:Service {name: $service_name})
+
 OPTIONAL MATCH (d:Deployment)-[:AFFECTS]->(s)
+
 OPTIONAL MATCH (c:Component)-[:BELONGS_TO]->(s)
+
 OPTIONAL MATCH (cm:Commit)-[:MODIFIES]->(c)
+
 OPTIONAL MATCH (cm)-[:ADDRESSES]->(t:Ticket)
+
 RETURN s.name AS service,
+
        collect(DISTINCT d.id) AS deployments,
+
        collect(DISTINCT c.name) AS components,
+
        collect(DISTINCT {
+
            hash: cm.hash,
+
            message: cm.message,
+
            author: cm.author,
+
            timestamp: cm.timestamp,
+
            jira_id: cm.jira_id
+
        }) AS suspect_commits
+
 ```
 
 ### 2. Proactive Blast-Radius & Dependency Subgraph Discovery (Engine A)
+
 * **File Location:** `falkordb_manager.py` & `codebase_indexer.py` (invoked during `/webhook/jira`)
+
 * **Purpose:** Given a set of semantically matched components from a new Jira ticket, the agent traverses outward in FalkorDB to discover all upstream/downstream dependent components and parent services within the blast radius.
 
 ```cypher
+
 MATCH (c:Component {name: $component_name})-[:BELONGS_TO]->(s:Service)
+
 OPTIONAL MATCH (c)-[:DEPENDS_ON*1..2]-(neighbor:Component)-[:BELONGS_TO]->(impacted_service:Service)
+
 RETURN c.name AS target_component,
+
        s.name AS primary_service,
+
        collect(DISTINCT neighbor.name) AS dependent_components,
+
        collect(DISTINCT impacted_service.name) AS blast_radius_services
+
 ```
 
 ### 3. Commit-to-Service Lineage Ingestion & Graph Wiring
+
 * **File Location:** `mozilla_ingestor.py` & `simulate_day_shift.py`
+
 * **Purpose:** Resolves modified file paths from Git commits against indexed `Component` nodes in FalkorDB and creates structural edges linking `Commit`, `Deployment`, `Component`, and `Service`.
 
 ```cypher
+
 MATCH (c:Component {name: $comp_name})
+
 MERGE (s:Service {name: $service_name})
+
 MERGE (c)-[:BELONGS_TO]->(s)
+
 MERGE (cm:Commit {hash: $commit_hash})
+
 SET cm.message = $message, cm.author = $author, cm.timestamp = $timestamp, cm.jira_id = $jira_id
+
 MERGE (cm)-[r:MODIFIES]->(c)
+
 ON CREATE SET r.weight = 1.0
+
 ```
 
 ### 4. Dynamic Graph Edge Weight Calibration (Reinforcement Learning Loop)
+
 * **File Location:** `falkordb_manager.py` & `main.py` (`/api/feedback`)
+
 * **Purpose:** When an engineer confirms a root-cause commit or submits a post-mortem, the agent strengthens the edge weight (`r.weight`) between the culprit `Commit`, `Component`, and `Service` in FalkorDB so future multi-hop rankings prioritize proven failure paths.
 
 ```cypher
+
 MATCH (cm:Commit {hash: $commit_hash})-[r:MODIFIES]->(c:Component)-[:BELONGS_TO]->(s:Service {name: $service_name})
+
 SET r.weight = coalesce(r.weight, 1.0) + $confidence_boost,
+
     r.last_validated = $timestamp
+
 RETURN cm.hash, c.name, r.weight AS updated_weight
+
 ```
 
 ### 5. Hybrid Graph + Vector Scoring Algorithm
+
 * **File Location:** `main.py` (RCA Ranking Engine)
+
 * **Algorithm:** Combines **FalkorDB structural path connectivity** ($G_{\text{score}}$), **ChromaDB cosine similarity** between the APM stack trace and Git code diff ($V_{\text{sim}}$), **Jira ticket keyword overlap** ($J_{\text{match}}$), and **exponential temporal decay** ($T_{\text{decay}}$):
+
   $$\text{Confidence Score} = 0.40 \cdot G_{\text{score}} + 0.35 \cdot V_{\text{sim}} + 0.15 \cdot T_{\text{decay}} + 0.10 \cdot J_{\text{match}}$$
 
 ---
 
 ## Repository Structure & Key Files
 
-| File | Role in Architecture |
-| :--- | :--- |
-| **`falkordb_manager.py`** | Core **FalkorDB** client wrapper containing Cypher queries for node creation, multi-hop blast-radius lookups, incident lineage traversal, and edge weight updates. |
-| **`main.py`** | **FastAPI** server implementing Engine A (`/webhook/jira`), Engine B (`/webhook/alert`), hybrid RCA scoring, auto-graph hydration on startup, and REST endpoints for the UI. |
-| **`chroma_manager.py`** | Manages **ChromaDB** persistent embeddings for code syntax vectors, commit diffs, and post-mortem institutional memory. |
-| **`codebase_indexer.py`** | AST/file scanner that indexes target repositories (`ebikes-lwc`) into both **FalkorDB** (`Component` & `Service` nodes) and **ChromaDB** vectors. |
-| **`mozilla_ingestor.py`** | Streams real Git commit history and PR diffs (`SFDC-2101`, `SFDC-2102`) into `/webhook/github`, wiring `Commit` ➔ `Component` ➔ `Service` edges in FalkorDB. |
-| **`simulate_day_shift.py`** | Simulates CI/CD production deployment pipelines and fires multi-telemetry Datadog + APM alerts against `/webhook/alert`. |
-| **`mcp_server.py`** | **Model Context Protocol (MCP)** server exposing FalkorDB graph queries (`query_blast_radius`, `trace_service_incidents`) as standardized tools for external AI agents. |
-| **`index.html`** | Interactive single-page **Command Center Dashboard** (Overview, Software Factory, Investigate, Analytics, and 1-Click Judge Triggers). |
-| **`.blasttrace_rules.md`** | Architectural safety rulebook (`skills.md`) used by Engine A's verification loop to validate generated test blueprints. |
+| File | Role |
+|---|---|
+| `main.py` | FastAPI app containing original engineering routes and the consolidated PayPal Sandbox APIs; serves `index.html` |
+| `index.html` | Existing interactive dashboard, judge demo triggers and embedded PayPal storefront |
+| `ai_engine.py` | Groq-backed test and risk blueprint generation |
+| `falkordb_manager.py` | Knowledge graph access and Cypher traversals |
+| `chroma_manager.py` | Code/diff/feedback semantic retrieval and persistent embeddings |
+| `codebase_indexer.py` | Parse and index a source repository into graph and vector context |
+| `mozilla_ingestor.py` | Ingest actual Git commits and diffs to the engineering backend |
+| `triage_service.py`, `triage_store.py` | Incident RCA logic and stored evidence |
+| `feedback_service.py` | Engineer verification and memory integration |
+| `diff_analyzer.py` | Code-change and diff analysis |
+| `jira_service.py` | Optional Jira API publication |
+| `webhook_models.py` | Incoming event payload models |
+| `mcp_server.py` | Optional MCP tool exposure for FalkorDB graph queries |
+| `.blasttrace_rules.md` in E-Bikes test repo | Live GitHub-hosted engineering rulebook referenced by Engine A |
+| `requirements.txt` | Python dependencies |
+| `LICENSE` | **Required OSI-approved open-source licence; add as a real root file after team approval** |
+| `README.MD` | This documentation |
 
+### Key backend routes
 
+| Route | Purpose |
+|---|---|
+| `POST /webhook/jira` | Ingest requirement / demo Jira-style ticket |
+| `POST /webhook/github` | Ingest code-change evidence |
+| `POST /webhook/alert` | Ingest Datadog-style alert or incident input |
+| `GET /api/software-factory`, `GET /api/software-factory/{ticket_id}` | Blueprint listing and detail, subject to internal-read mode |
+| `GET /api/incidents`, `GET /api/incidents/{alert_id}` | Incident listing and evidence |
+| `GET /triage`, `GET /triage/{alert_id}` | Stored ranked triage findings |
+| `GET /api/paypal/config` | Feature flag and public price/configuration status |
+| `GET /api/paypal/catalog`, `GET /api/paypal/offer` | Eligible offers and previews |
+| `POST /api/paypal/checkout` | Create a server-priced Sandbox checkout |
+| `POST /api/paypal/status` | Check purchase status via a token |
+| `POST /api/paypal/complete` | Verify approval, capture and completed settlement |
+| `POST /api/paypal/delivery` | Deliver the purchased result only after validated capture |
+
+Inspect the interactive schemas at **`/docs`**.
+
+---
+
+## Security and Deployment Limits
+
+This is a **Sandbox demonstration**, not a production-ready commercial paywall.
+
+- `BLASTTRACE_EXTERNAL_ACCESS_MODE=0` is appropriate only for **trusted local development**. Legacy detailed RCA and blueprint API endpoints may reveal engineering results without purchasing them.
+- For a shared restricted demo, use `BLASTTRACE_EXTERNAL_ACCESS_MODE=1` with a strong `BLASTTRACE_INTERNAL_API_KEY` of at least 24 characters, and independently test every exposed route. This is **not** comprehensive authentication or authorization.
+- Before deploying publicly, apply proper identity, resource ownership/RBAC, webhook signature/authenticity checks, CORS restrictions, rate limiting, CSRF protection as appropriate and secret management.
+- The purchase ledger uses local **SQLite**; a shared, transactional database and backups are needed for multi-instance operation.
+- Keep API credentials, `.env`, payment tokens and ledgers out of Git. Rotate any credentials exposed in history, screenshots or chats.
+- PayPal calls are scoped to the Sandbox service. **PayPal Live and production webhooks/reconciliation are not implemented** in the supplied documentation.
+- For remote hosting, update `BLASTTRACE_CHECKOUT_RETURN_URL` to the reachable **HTTPS dashboard URL** and configure the corresponding PayPal application return setting. Do not leave a hosted frontend pointing to `localhost`.
+- The RCA cutoff is a heuristic rule, **not** a statistically validated guarantee of investigation accuracy.
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| `/` shows JSON or a backend message | This is expected; open **`/index.html`** for the dashboard |
+| Browser cannot reach `localhost:5500` | The consolidated setup uses **port `8000`** only; do not start the old frontend server |
+| `ImportError` / missing package | Activate the project venv; reinstall `requirements.txt` |
+| Groq request fails | Confirm `GROQ_API_KEY`, model entitlement and provider availability |
+| FalkorDB connection fails | Start the correct Docker container and verify TCP `6379` |
+| No blueprint/RCA evidence | Check initial indexing, actual Git ingestion, worker/background completion and graph contents |
+| PayPal button disabled | Check `/api/paypal/config`, Sandbox keys and completed-result eligibility |
+| PayPal return does not unlock result | Confirm the same browser session and a validated **`COMPLETED`** capture; use Restore purchase where appropriate |
+| Remote UI calls localhost | Use the revised same-origin dashboard and an HTTPS checkout return URL |
+| Shared restricted demo shows `403` | Configure the internal developer key; do not turn off access controls publicly |
+
+## Verification Status and Honest Demo Boundaries
+
+- The original engineering demo uses real E-Bikes test-repository Git commits, a real ingested graph/vector workflow, and controlled Jira-style / Datadog-style payloads.
+- The APM trace in the demonstration is representative/simulated; it is **not** a live Salesforce production trace.
+- The supplied second README reports syntax and frontend/backend route checks and an **isolated mocked-provider payment test** covering checkout eligibility, invalid tokens, incomplete approval, verified captures, idempotency and delivery gates.
+- That evidence **does not prove** a full current end-to-end run against live FalkorDB, Groq and PayPal Sandbox. Such a run and a negative payment case are recommended before final submission.
+- The linked original engineering demo video does **not** by itself demonstrate the later PayPal integration.
+
+## Origin, Contributors and Open-Source Licence
+
+BlastTrace began as a graph-powered software reliability project connecting changes, requirements and monitoring evidence. Its PayPal AI Hackathon extension adds an optional Sandbox pay-per-result checkout to the existing proactive Software Factory and reactive RCA engines.
+
+**Contributors:** Chinmay Pingale and Sneha Kumari, as credited in the original project write-up.
+
+**Licence:** Publish an approved OSI licence file named **`LICENSE` at the repository root**. The proposed choice in the supplied revised draft is **MIT**, subject to the copyright owners/team approving that permission. After the file is actually committed, this README may state: *“Licensed under the MIT License; see [LICENSE](LICENSE).”* Third-party code and dependencies remain under their own licences.
+
+**Project links:** [Original engineering demonstration](https://youtu.be/jcgvUy7pPas?si=V2kmy5vhlOVVY5uV) · [Salesforce E-Bikes demonstration repository](https://github.com/kumarisneha4121-ops/ebikes-lwc)

@@ -345,7 +345,13 @@ window.BLASTTRACE_API_BASE = (() => {
     const explicit = params.get("api") || localStorage.getItem("blasttrace_api_base");
     if (explicit) return explicit.replace(/\/$/, "");
     if (location.protocol === "http:" || location.protocol === "https:") {
-      return `${location.protocol}//${location.hostname}:8000`;
+      // The FastAPI app serves the dashboard and API on the same origin.
+      // Preserve legacy local development when the HTML is served on port 5500.
+      const local = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      if (local && location.port && location.port !== "8000") {
+        return `${location.protocol}//${location.hostname}:8000`;
+      }
+      return location.origin;
     }
   } catch (_) {}
   return "http://127.0.0.1:8000";

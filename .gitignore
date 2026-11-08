@@ -8,9 +8,13 @@ ngrok.exe
 *.gexf
 chroma_data
 data
-chroma.sqlite3
-chroma_data/chroma.sqlite3
-# PayPal checkout ledger 
+# PayPal checkout ledger (contains transaction references; do not commit)
 blasttrace_paypal.sqlite3
 blasttrace_paypal.sqlite3-shm
 blasttrace_paypal.sqlite3-wal
+
+# Local environments and test state
+.venv/
+.pytest_cache/
+.env.*
+!.env.example
