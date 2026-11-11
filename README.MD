@@ -29,7 +29,7 @@ Both engines share a connected software-lifecycle graph rather than treating req
 
 ## PayPal Sandbox — on-demand investigation checkout
 
-BlastTrace extends its two original AI/graph engineering engines with an **optional PayPal Sandbox checkout**. The integration uses **PayPal Orders v2 with `CAPTURE` intent**, not AgentGain's authorization-before-evaluation flow. In BlastTrace, the engineering analysis must already exist before it can be purchased.
+BlastTrace extends its two AI/graph engineering engines with **PayPal Sandbox checkout for on-demand access to completed results**. The integration uses **PayPal Orders v2 with `CAPTURE` intent**: the engineering analysis must already exist before it can be purchased. Payment is optional for running the engineering engines locally, but central to the paid-result experience demonstrated for this hackathon.
 
 | Purchase | Sandbox price | Eligibility |
 |---|---:|---|
@@ -54,7 +54,7 @@ The payment API is integrated into `main.py`; the purchase interface is included
 |---|---|
 | **PayPal Developer Sandbox, OAuth 2.0, Orders v2** | Sandbox checkout, buyer approval, order verification and capture |
 | **`PayPal-Request-Id`** | Stable idempotency identifiers for order creation/capture retries |
-| **Groq API (`openai/gpt-oss-120b` in the revised README; confirm against the running configuration)** | AI-assisted proactive test and blast-radius blueprints |
+| **Groq API (`openai/gpt-oss-120b` in the current code)** | AI-assisted test and blast-radius blueprints and LLM-based incident candidate evaluation |
 | **FalkorDB / Cypher** | Connected requirements, services, source changes, deployments and incidents; multi-hop investigation |
 | **ChromaDB** | Semantic retrieval of code, commits and incident/post-mortem context |
 | **FastAPI / Python** | Orchestration, API endpoints and evidence/checkout checks |
@@ -65,9 +65,9 @@ The payment API is integrated into `main.py`; the purchase interface is included
 
 ## How to Run BlastTrace Locally
 
-These instructions are for **Windows PowerShell**, and use the **consolidated, single-origin configuration from the second README**: FastAPI serves both the API and `index.html` on **port `8000`**. The homepage `/` may show a backend status response; open **`/index.html`** for the actual dashboard.
+These instructions are for **Windows PowerShell**. The consolidated application serves both the API and `index.html` through FastAPI on **port `8000`**. The homepage `/` may show a backend status response; open **`/index.html`** for the actual dashboard.
 
-**Do not start `serve_frontend.py` on port `5500` in this consolidated version**; the second document says that file is absent. Do not use `python -m http.server` from the project root either, because this may expose `.env` or saved data.
+**Do not start a separate frontend server on port `5500`** for this version. Do not use `python -m http.server` from the project root either, because this may expose `.env` or saved data.
 
 ### Prerequisites
 
@@ -188,7 +188,7 @@ Open **`http://127.0.0.1:8000/index.html`**. No separate `5500` frontend server 
 5. Return to the **same browser session**. Confirm the server reports a **`COMPLETED`** capture and displays the receipt and paid JSON result. If interrupted, try **Restore purchase** from the original browser session.
 6. Check a negative case: an RCA score of `0.50` or below must not permit Deep RCA checkout; cancelled/unapproved/incorrect-token payment must not unlock results.
 
-An isolated mocked PayPal provider test is **not** proof of a real Sandbox transaction. Run a credential-backed end-to-end test before describing the payment demo as fully verified.
+**Payment testing status (team-confirmed):** The team reports successfully testing the supported PayPal Sandbox purchase paths end to end. Both Deep RCA and Software Factory purchases are implemented to unlock results only after server-verified `COMPLETED` capture. To reproduce the test, use the separate Sandbox buyer account and follow the steps above; the tests use simulated funds only.
 
 ---
 
@@ -212,7 +212,7 @@ After completing the local setup, use the following **one-click dashboard trigge
 
 2. Click **Investigate Incident 1 — Category Filters** or **Investigate Incident 2 — Product Selection**.
 
-3. Inspect the **Top-3 probable root causes**, confidence scores, connected deployment/Git evidence and code diffs.
+3. Inspect the **Top-3 ranked possible root causes**, heuristic ranking scores, connected deployment/Git evidence and code diffs.
 
 **Behind the scenes:** The dashboard sends a prepared incident payload to `/webhook/alert`. BlastTrace creates an alert in **FalkorDB**, traverses the connected service/deployment/commit/component graph and combines graph evidence with **ChromaDB** semantic similarity and time-related signals to rank suspect commits.
 
@@ -220,14 +220,14 @@ After completing the local setup, use the following **one-click dashboard trigge
 
 ---
 
-### 3. PayPal — Sandbox checkout (optional extension)
+### 3. PayPal — Sandbox checkout and paid delivery
 
 1. With the app on port `8000`, open `/index.html`, then confirm the PayPal config and catalog endpoints.
 2. Generate an eligible existing result using Engine A or B. The purchased analysis is **already computed** before checkout.
 3. Choose the appropriate product, approve the PayPal Sandbox order using the separate personal buyer and return to the same browser session.
 4. Inspect the verified capture, receipt and unlocked JSON result. Test cancelled/unapproved and ineligible purchases to confirm that the result stays locked.
 
-**Verification boundary:** The supplied revised README reports mocked payment-provider checks, not an independently completed live PayPal Sandbox transaction. Judges should run the positive checkout themselves with Sandbox credentials.
+**Verification status:** The team reports completed PayPal Sandbox testing for the supported purchase paths. Judges can reproduce the checkout with their own Sandbox credentials using the instructions above. Server-confirmed capture, not merely the PayPal redirect, is required to unlock paid delivery.
 
 ---
 
@@ -254,7 +254,7 @@ Live GitHub Rulebook: We also created and pushed **.blasttrace_rules.md** to our
 | **GitHub rulebook — real and fetched live** | We created and pushed `.blasttrace_rules.md` to the E-Bikes GitHub repository. The backend fetches it over HTTP during Engine A blueprint generation, rather than embedding the team's full rules inside the prompt. Changes pushed to the rulebook can affect later analyses. |
 | **Datadog — real webhook support plus automated demo** | Datadog can send an actual webhook alert to a reachable `/webhook/alert` endpoint. For repeatable judging, the dashboard instead sends a prepared **Datadog-style Product Explorer alert** through the same incident-processing API. Clicking the button does **not** itself create a Datadog monitor alert. |
 | **APM — simulated trace input** | Because live APM provider onboarding required organization details, `simulate_apm.py` supplies a representative **AppDynamics-style trace**. The trace is simulated, while the receiving backend and graph/vector RCA processing remain functional. |
-| **RCA results — computed, not hardcoded** | The controlled inputs trigger the backend's FalkorDB traversal, semantic comparison of candidate code changes and hybrid ranking. The scenario is known in advance, but the displayed RCA is produced from stored evidence and the ranking pipeline. |
+| **RCA results — computed, with a demonstration limitation** | The controlled inputs trigger FalkorDB traversal, semantic comparison and hybrid ranking rather than a static stored final result. However, the current ranking prompt includes scenario-specific guidance for a known test defect, so these demo results should not be presented as independent evidence of accuracy on unseen incidents. |
 | **Memory and feedback — persisted** | Engineer verification and post-mortem information can update graph relationships and supply retrieval context for later investigations. |
 
 This approach keeps the demo repeatable while showing exactly where live external integrations end and controlled demonstration inputs begin.
@@ -553,9 +553,11 @@ RETURN cm.hash, c.name, r.weight AS updated_weight
 
 * **File Location:** `main.py` (RCA Ranking Engine)
 
-* **Algorithm:** Combines **FalkorDB structural path connectivity** ($G_{\text{score}}$), **ChromaDB cosine similarity** between the APM stack trace and Git code diff ($V_{\text{sim}}$), **Jira ticket keyword overlap** ($J_{\text{match}}$), and **exponential temporal decay** ($T_{\text{decay}}$):
+* **Algorithm (current `diff_analyzer.py`):** Combines a semantic assessment (LLM evaluation plus ChromaDB similarity), a FalkorDB graph score, and feedback evidence:
 
-  $$\text{Confidence Score} = 0.40 \cdot G_{\text{score}} + 0.35 \cdot V_{\text{sim}} + 0.15 \cdot T_{\text{decay}} + 0.10 \cdot J_{\text{match}}$$
+  $$\text{Final ranking score} = 0.60 \cdot S_{\text{combined semantic}} + 0.25 \cdot G_{\text{graph}} + 0.15 \cdot F_{\text{feedback}}$$
+
+  The current `diff_analyzer.py` computes combined semantic score as **90% LLM evaluation + 10% scaled ChromaDB similarity**, then applies the weights above. These are **heuristic ranking scores**, not calibrated probabilities of a correct root cause.
 
 ---
 
@@ -578,7 +580,7 @@ RETURN cm.hash, c.name, r.weight AS updated_weight
 | `mcp_server.py` | Optional MCP tool exposure for FalkorDB graph queries |
 | `.blasttrace_rules.md` in E-Bikes test repo | Live GitHub-hosted engineering rulebook referenced by Engine A |
 | `requirements.txt` | Python dependencies |
-| `LICENSE` | **Required OSI-approved open-source licence; add as a real root file after team approval** |
+| `LICENSE` | MIT open-source license, present at the repository root |
 | `README.MD` | This documentation |
 
 ### Key backend routes
@@ -632,10 +634,11 @@ This is a **Sandbox demonstration**, not a production-ready commercial paywall.
 
 ## Verification Status and Honest Demo Boundaries
 
-- The original engineering demo uses real E-Bikes test-repository Git commits, a real ingested graph/vector workflow, and controlled Jira-style / Datadog-style payloads.
+- The original engineering demo uses real E-Bikes test-repository Git commits, an ingested graph/vector workflow, and controlled Jira-style / Datadog-style payloads.
+- **RCA evaluation caveat:** The current `diff_analyzer.py` prompt explicitly references a known test defect and assigns a preferred high score to that pattern. The demo therefore does not by itself validate generalization to unseen incidents. Remove those hints and run held-out cases before claiming independent RCA accuracy.
 - The APM trace in the demonstration is representative/simulated; it is **not** a live Salesforce production trace.
-- The supplied second README reports syntax and frontend/backend route checks and an **isolated mocked-provider payment test** covering checkout eligibility, invalid tokens, incomplete approval, verified captures, idempotency and delivery gates.
-- That evidence **does not prove** a full current end-to-end run against live FalkorDB, Groq and PayPal Sandbox. Such a run and a negative payment case are recommended before final submission.
+- **PayPal Sandbox (team-tested):** The team confirms that the implemented PayPal payment workflows have been tested successfully using Sandbox credentials. Server-controlled prices, buyer approval, capture verification and purchased-result delivery are included in the application. These are Sandbox tests, not live-money processing. Test logs or transaction IDs are not included in this README.
+- The application also contains safeguards for ineligible offers, incomplete approval, invalid checkout tokens and repeat completion requests. Judges can reproduce these checks following the instructions above.
 - The linked original engineering demo video does **not** by itself demonstrate the later PayPal integration.
 
 ## Origin, Contributors and Open-Source Licence
@@ -644,6 +647,6 @@ BlastTrace began as a graph-powered software reliability project connecting chan
 
 **Contributors:** Chinmay Pingale and Sneha Kumari, as credited in the original project write-up.
 
-**Licence:** Publish an approved OSI licence file named **`LICENSE` at the repository root**. The proposed choice in the supplied revised draft is **MIT**, subject to the copyright owners/team approving that permission. After the file is actually committed, this README may state: *“Licensed under the MIT License; see [LICENSE](LICENSE).”* Third-party code and dependencies remain under their own licences.
+**Licence:** BlastTrace is published under the [MIT License](LICENSE), included at the repository root. Third-party code, dependencies and branding retain their respective licences and terms.
 
 **Project links:** [Original engineering demonstration](https://youtu.be/jcgvUy7pPas?si=V2kmy5vhlOVVY5uV) · [Salesforce E-Bikes demonstration repository](https://github.com/kumarisneha4121-ops/ebikes-lwc)
